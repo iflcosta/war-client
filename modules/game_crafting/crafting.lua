@@ -52,6 +52,9 @@ function onGameStart()
     if not craftingButton then
         -- Default top menu icon
         craftingButton = modules.client_topmenu.addLeftGameButton('craftingButton', tr('Aetherite Mastery') .. ' (Ctrl+M)', '/images/topbuttons/spelllist', toggle)
+        if not g_settings.getBoolean('game_crafting_button', false) then
+            craftingButton:hide()
+        end
     end
     
     if craftingWindow then

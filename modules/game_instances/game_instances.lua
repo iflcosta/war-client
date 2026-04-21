@@ -30,6 +30,9 @@ function init()
         "/modules/game_cyclopedia/images/boss/icon_star_gold.png",
         toggle
     )
+    if not g_settings.getBoolean('game_instances_button', false) then
+        instancesButton:hide()
+    end
 end
 
 function terminate()

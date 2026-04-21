@@ -42,6 +42,9 @@ function init()
         "/modules/game_cyclopedia/images/boss/icon_star_gold.png",
         toggle
     )
+    if not g_settings.getBoolean('game_battlepass_button', false) then
+        battlePassButton:hide()
+    end
 end
 
 function terminate()

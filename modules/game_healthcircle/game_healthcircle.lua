@@ -29,10 +29,10 @@ manaShieldCircleOffsetY = 7
 
 optionPanel = nil
 
-isHealthCircle = not g_settings.getBoolean('healthcircle_hpcircle')
-isManaCircle = not g_settings.getBoolean('healthcircle_mpcircle')
-isExpCircle = g_settings.getBoolean('healthcircle_expcircle')
-isSkillCircle = g_settings.getBoolean('healthcircle_skillcircle')
+isHealthCircle = g_settings.getBoolean('healthcircle_hpcircle', false)
+isManaCircle = g_settings.getBoolean('healthcircle_mpcircle', false)
+isExpCircle = g_settings.getBoolean('healthcircle_expcircle', false)
+isSkillCircle = g_settings.getBoolean('healthcircle_skillcircle', false)
 skillTypes = g_settings.getNode('healthcircle_skilltypes')
 skillsLoaded = false
 
@@ -100,6 +100,28 @@ function init()
     connect(g_game, {
         onGameStart = setPlayerValues
     })
+    
+    -- Force disable on init for classic mode release
+    if not g_settings.getBoolean('classic_mode_reset_v1', false) then
+        g_settings.set('healthcircle_hpcircle', false)
+        g_settings.set('healthcircle_mpcircle', false)
+        g_settings.set('healthcircle_expcircle', false)
+        g_settings.set('healthcircle_skillcircle', false)
+        g_settings.set('classic_mode_reset_v1', true)
+        
+        isHealthCircle = false
+        isManaCircle = false
+        isExpCircle = false
+        isSkillCircle = false
+    end
+
+    -- Force hide if it's the first time or setting is false
+    if not isHealthCircle then
+        setHealthCircle(false)
+    end
+    if not isManaCircle then
+        setManaCircle(false)
+    end
 end
 
 function terminate()
@@ -602,7 +624,7 @@ function setHealthCircle(value)
         resetManaCircleImages()
     end
 
-    g_settings.set('healthcircle_hpcircle', not value)
+    g_settings.set('healthcircle_hpcircle', value)
 end
 
 function setManaCircle(value)
@@ -617,7 +639,7 @@ function setManaCircle(value)
         manaCircleFront:setVisible(false)
     end
 
-    g_settings.set('healthcircle_mpcircle', not value)
+    g_settings.set('healthcircle_mpcircle', value)
 end
 
 function setExpCircle(value)
