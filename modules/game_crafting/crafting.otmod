@@ -1,0 +1,12 @@
+Module
+  name: game_crafting
+  description: Aetherite Mastery & Crafting System
+  author: Antigravity
+  website: https://github.com/iflcosta/aethrium
+  sandboxed: true
+  scripts: [ crafting ]
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_interface, client_topmenu ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,9 @@
+Module
+  name: game_instances
+  description: Aethrium - Hunt & Boss Room Instance Selector
+  author: Aethrium
+  website: aethrium
+  scripts: [ game_instances.lua ]
+  sandboxed: true
+  @onLoad: init()
+  @onUnload: terminate()
