@@ -1,0 +1,29 @@
+# Binaries
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Assets (Should be distributed via Releases)
+data/things/*
+!data/things/CMakeLists.txt
+
+# Build folders
+build/
+bin/
+obj/
+out/
+.vs/
+*.sln
+*.vcxproj
+*.user
+
+# Logs and local configs
+*.log
+config.otml
+*.tmp
+
+# LFS
+.gitattributes
