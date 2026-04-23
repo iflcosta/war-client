@@ -145,7 +145,10 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WASM)
   find_package(X11 REQUIRED)
 endif()
 if(APPLE)
-  find_package(X11) # Optional for macOS if using XQuartz
+  find_package(X11)
+  if(X11_FOUND)
+    add_definitions(-DX11_SUPPORT)
+  endif()
 endif()
 if(WIN32)
   find_package(DbgHelp REQUIRED)
@@ -776,6 +779,7 @@ else() # Linux
           ${NLOHMANN_JSON_INCLUDE_DIR}
           ${OPENSSL_INCLUDE_DIR}
           ${CPPCODEC_INCLUDE_DIRS}
+          ${X11_INCLUDE_DIR}
   )
   target_link_libraries(otclient_core
           PUBLIC

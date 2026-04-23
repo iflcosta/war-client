@@ -34,15 +34,15 @@ AndroidWindow window;
 #elif defined __EMSCRIPTEN__
 #include "browserwindow.h"
 BrowserWindow window;
-#elif defined X11_TERMINAL # This is a placeholder, usually X11 is used on Linux
+#elif defined X11_TERMINAL // This is a placeholder, usually X11 is used on Linux
 #include "x11window.h"
 X11Window window;
 #else
-#if defined(__APPLE__)
-// On Apple, if we don't have a native window yet, we might try X11 if specifically enabled
-// but for now let's just use a dummy or skip if X11 headers are not found.
+#if defined(__APPLE__) && defined(X11_SUPPORT)
 #include "x11window.h"
 X11Window window;
+#elif defined(__APPLE__)
+#error "No native window implementation for macOS. Please install XQuartz or add SDL2 support."
 #else
 #include "x11window.h"
 X11Window window;
