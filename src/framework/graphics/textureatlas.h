@@ -102,6 +102,8 @@ private:
     {
         std::unique_ptr<FrameBuffer> framebuffer;
         std::vector<AtlasRegion*> textures;
+
+        Layer(std::unique_ptr<FrameBuffer> fbo) : framebuffer(std::move(fbo)) {}
     };
     void createNewLayer(bool smooth);
 

@@ -45,7 +45,7 @@ public:
     const auto& getClassList() const { return classList; }
     const auto& getChildren() const { return children; }
     const auto& getRawText() const { return text; }
-    const auto getParent() const { return parent.lock(); }
+    auto getParent() const { return parent.lock(); }
 
     HtmlNodePtr getById(const std::string& id) const {
         auto root = documentRoot();
