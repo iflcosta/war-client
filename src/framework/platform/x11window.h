@@ -38,7 +38,11 @@ inline constexpr auto X11None = None;
 #ifdef OPENGL_ES
 #include <EGL/egl.h>
 #else
+#if defined(__APPLE__)
 #include <GL/glx.h>
+#else
+#include <GL/glx.h>
+#endif
 #endif
 
 class X11Window : public PlatformWindow

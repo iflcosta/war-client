@@ -66,6 +66,7 @@ jobs:
       - name: Install MacOS Dependencies
         run: |
           brew install ccache ninja
+          brew install --cask xquartz
 
       - name: Get vcpkg commit ID
         id: vcpkg-step

@@ -34,10 +34,19 @@ AndroidWindow window;
 #elif defined __EMSCRIPTEN__
 #include "browserwindow.h"
 BrowserWindow window;
+#elif defined X11_TERMINAL # This is a placeholder, usually X11 is used on Linux
+#include "x11window.h"
+X11Window window;
+#else
+#if defined(__APPLE__)
+// On Apple, if we don't have a native window yet, we might try X11 if specifically enabled
+// but for now let's just use a dummy or skip if X11 headers are not found.
+#include "x11window.h"
+X11Window window;
 #else
 #include "x11window.h"
-#include <framework/core/clock.h>
 X11Window window;
+#endif
 #endif
 
 PlatformWindow& g_window = window;

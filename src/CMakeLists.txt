@@ -141,8 +141,11 @@ if(APPLE)
   find_library(FOUNDATION Foundation REQUIRED)
   find_library(IOKIT IOKit REQUIRED)
 endif()
-if(UNIX AND NOT ANDROID AND NOT WASM)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WASM)
   find_package(X11 REQUIRED)
+endif()
+if(APPLE)
+  find_package(X11) # Optional for macOS if using XQuartz
 endif()
 if(WIN32)
   find_package(DbgHelp REQUIRED)
@@ -345,8 +348,23 @@ if (TOGGLE_FRAMEWORK_GRAPHICS)
           framework/graphics/texture.cpp
           framework/graphics/texturemanager.cpp
           framework/graphics/shadermanager.cpp
-          framework/platform/win32window.cpp
-          framework/platform/x11window.cpp
+  )
+endif()
+
+if(WIN32)
+  set(SOURCE_FILES ${SOURCE_FILES} framework/platform/win32window.cpp)
+elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WASM)
+  set(SOURCE_FILES ${SOURCE_FILES} framework/platform/x11window.cpp)
+elseif(APPLE)
+  # For now, we allow X11 on Apple if found, otherwise it will fail at link time
+  # which is better than failing at compile time with missing headers
+  if(X11_FOUND)
+    set(SOURCE_FILES ${SOURCE_FILES} framework/platform/x11window.cpp)
+  endif()
+endif()
+
+if (TOGGLE_FRAMEWORK_GRAPHICS)
+  set(SOURCE_FILES ${SOURCE_FILES}
           framework/ui/uianchorlayout.cpp
           framework/ui/uiboxlayout.cpp
           framework/ui/uigridlayout.cpp
