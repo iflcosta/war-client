@@ -10,7 +10,7 @@ on:
       - ".github/workflows/build-docker.yml"
       - "src/**"
   push:
-    branches: [ $default-branch ]
+    branches: [ main ]
     paths:
       - "Dockerfile"
       - ".dockerignore"
