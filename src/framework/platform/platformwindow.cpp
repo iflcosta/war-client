@@ -26,8 +26,8 @@
 #include "framework/graphics/image.h"
 
 #ifdef SDL_SUPPORT
-#include "sdlwindow.h"
-SDLWindow window;
+#include "sdl2window.h"
+SDL2Window window;
 #elif defined WIN32
 #include "win32window.h"
 WIN32Window window;
@@ -37,20 +37,9 @@ AndroidWindow window;
 #elif defined __EMSCRIPTEN__
 #include "browserwindow.h"
 BrowserWindow window;
-#elif defined X11_TERMINAL // This is a placeholder, usually X11 is used on Linux
-#include "x11window.h"
-X11Window window;
-#else
-#if defined(__APPLE__) && defined(X11_SUPPORT)
-#include "x11window.h"
-X11Window window;
-#elif defined(__APPLE__)
-#include "x11window.h"
-X11Window window;
 #else
 #include "x11window.h"
 X11Window window;
-#endif
 #endif
 
 PlatformWindow& g_window = window;

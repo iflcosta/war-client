@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - feature/macos-build
     paths:
       - "src/**"
       - ".github/workflows/build-macos.yml"
