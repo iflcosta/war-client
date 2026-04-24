@@ -145,10 +145,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WASM)
   find_package(X11 REQUIRED)
 endif()
 if(APPLE)
-  find_package(X11)
-  if(X11_FOUND)
-    add_definitions(-DX11_SUPPORT)
-  endif()
+  find_package(SDL2 CONFIG REQUIRED)
 endif()
 if(WIN32)
   find_package(DbgHelp REQUIRED)
@@ -359,11 +356,7 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WASM)
   set(SOURCE_FILES ${SOURCE_FILES} framework/platform/x11window.cpp)
 elseif(APPLE)
-  # For now, we allow X11 on Apple if found, otherwise it will fail at link time
-  # which is better than failing at compile time with missing headers
-  if(X11_FOUND)
-    set(SOURCE_FILES ${SOURCE_FILES} framework/platform/x11window.cpp)
-  endif()
+  set(SOURCE_FILES ${SOURCE_FILES} framework/platform/sdl2window.cpp)
 endif()
 
 if (TOGGLE_FRAMEWORK_GRAPHICS)
@@ -805,7 +798,8 @@ else() # Linux
           protobuf::libprotobuf protobuf
           absl::log_internal_check_op
           Threads::Threads
-          X11::X11
+          $<$<PLATFORM_ID:Darwin>:SDL2::SDL2>
+          $<$<NOT:$<PLATFORM_ID:Darwin>>:X11::X11>
           asio::asio
           OpenAL::OpenAL
           LibLZMA::LibLZMA

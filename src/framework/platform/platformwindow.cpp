@@ -31,22 +31,15 @@ WIN32Window window;
 #elif defined ANDROID
 #include "androidwindow.h"
 AndroidWindow window;
+#elif defined __APPLE__
+#include "sdl2window.h"
+SDL2Window window;
 #elif defined __EMSCRIPTEN__
 #include "browserwindow.h"
 BrowserWindow window;
-#elif defined X11_TERMINAL // This is a placeholder, usually X11 is used on Linux
-#include "x11window.h"
-X11Window window;
-#else
-#if defined(__APPLE__) && defined(X11_SUPPORT)
-#include "x11window.h"
-X11Window window;
-#elif defined(__APPLE__)
-#error "No native window implementation for macOS. Please install XQuartz or add SDL2 support."
 #else
 #include "x11window.h"
 X11Window window;
-#endif
 #endif
 
 PlatformWindow& g_window = window;

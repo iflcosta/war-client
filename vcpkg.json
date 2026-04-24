@@ -20,6 +20,7 @@
     "pugixml",
     "stduuid",
     "zlib",
+    "sdl2",
     "bshoshany-thread-pool",
     "fmt",
     "utfcpp",
