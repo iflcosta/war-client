@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["src/**", "cmake/**", "vcpkg.json"]
+    paths: ["src/**", "cmake/**", "vcpkg.json", ".github/workflows/build-windows-solution.yml"]
   push:
     branches: [main, feature/macos-build]
-    paths: ["src/**", "cmake/**", "vcpkg.json"]
+    paths: ["src/**", "cmake/**", "vcpkg.json", ".github/workflows/build-windows-solution.yml"]
 
 permissions:
   contents: read
