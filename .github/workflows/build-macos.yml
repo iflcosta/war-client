@@ -134,7 +134,9 @@ jobs:
             -DOPTIONS_ENABLE_IPO=OFF \
             -DTOGGLE_BOT_PROTECTION=OFF \
             -DTOGGLE_SDL2=ON \
-            -DCMAKE_OSX_ARCHITECTURES="arm64"
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DCMAKE_APPLE_SILICON_PROCESSOR=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
 
           cmake --build build-${{ matrix.buildtype }} --target otclient
 
