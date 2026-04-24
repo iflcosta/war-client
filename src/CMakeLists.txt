@@ -17,6 +17,7 @@ option(ASAN_ENABLED "Build this target with AddressSanitizer" OFF)
 option(BUILD_STATIC_LIBRARY "Build using static libraries" OFF)
 option(TOGGLE_PRE_COMPILED_HEADER "Use precompiled header (speed up compile)" ON)
 option(SPEED_UP_BUILD_UNITY "Compile using build unity for speed up build" ON)
+option(TOGGLE_SDL2 "Use SDL2 for windowing and input" OFF)
 
 # *****************************************************************************
 # Cmake Features
@@ -135,6 +136,12 @@ find_package(utf8cpp REQUIRED)
 find_package(unofficial-inih CONFIG REQUIRED)
 
 find_path(CPPCODEC_INCLUDE_DIRS "cppcodec/base32_crockford.hpp")
+
+if(TOGGLE_SDL2)
+  find_package(SDL2 REQUIRED)
+  add_definitions(-DSDL_SUPPORT)
+  set(SOURCE_FILES ${SOURCE_FILES} framework/platform/sdlwindow.cpp)
+endif()
 
 if(APPLE)
   # Required for Physfs
@@ -413,6 +420,10 @@ endif()
 add_library(otclient_core STATIC ${SOURCE_FILES})
 
 target_link_libraries(otclient_core PRIVATE unofficial::inih::inireader)
+
+if(TOGGLE_SDL2)
+  target_link_libraries(otclient_core PUBLIC SDL2::SDL2)
+endif()
 
 if(NOT MSVC)
   target_link_options(otclient_core PUBLIC -flto=auto)

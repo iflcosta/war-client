@@ -25,7 +25,10 @@
 #include "framework/core/clock.h"
 #include "framework/graphics/image.h"
 
-#ifdef WIN32
+#ifdef SDL_SUPPORT
+#include "sdlwindow.h"
+SDLWindow window;
+#elif defined WIN32
 #include "win32window.h"
 WIN32Window window;
 #elif defined ANDROID
@@ -42,7 +45,8 @@ X11Window window;
 #include "x11window.h"
 X11Window window;
 #elif defined(__APPLE__)
-#error "No native window implementation for macOS. Please install XQuartz or add SDL2 support."
+#include "x11window.h"
+X11Window window;
 #else
 #include "x11window.h"
 X11Window window;
