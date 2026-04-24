@@ -35,7 +35,7 @@ SDL2Window::SDL2Window()
 void SDL2Window::init()
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
-        g_logger.fatal(stdext::format("SDL could not initialize! SDL_Error: {}", SDL_GetError()));
+        g_logger.fatal(std::string("SDL could not initialize! SDL_Error: ") + SDL_GetError());
         return;
     }
 
@@ -48,13 +48,13 @@ void SDL2Window::init()
     
     m_window = SDL_CreateWindow("OTClient", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, windowFlags);
     if (!m_window) {
-        g_logger.fatal(stdext::format("Window could not be created! SDL_Error: {}", SDL_GetError()));
+        g_logger.fatal(std::string("Window could not be created! SDL_Error: ") + SDL_GetError());
         return;
     }
 
     m_context = SDL_GL_CreateContext(m_window);
     if (!m_context) {
-        g_logger.fatal(stdext::format("OpenGL context could not be created! SDL_Error: {}", SDL_GetError()));
+        g_logger.fatal(std::string("OpenGL context could not be created! SDL_Error: ") + SDL_GetError());
         return;
     }
 
