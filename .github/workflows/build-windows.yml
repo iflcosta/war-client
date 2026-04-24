@@ -6,14 +6,19 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "src/**"
+      - "cmake/**"
+      - "vcpkg.json"
       - ".github/workflows/build-windows.yml"
   merge_group:
   push:
     paths:
       - "src/**"
+      - "cmake/**"
+      - "vcpkg.json"
       - ".github/workflows/build-windows.yml"
     branches:
       - main
+      - feature/macos-build
 
 permissions:
   contents: read

@@ -10,12 +10,16 @@ on:
       - ".github/workflows/build-docker.yml"
       - "src/**"
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - feature/macos-build
     paths:
       - "Dockerfile"
       - ".dockerignore"
       - ".github/workflows/build-docker.yml"
       - "src/**"
+      - "cmake/**"
+      - "vcpkg.json"
 
 permissions:
   contents: read

@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["src/**"]
+    paths: ["src/**", "cmake/**", "vcpkg.json"]
   push:
-    branches: [main]
-    paths: ["src/**"]
+    branches: [main, feature/macos-build]
+    paths: ["src/**", "cmake/**", "vcpkg.json"]
 
 permissions:
   contents: read
