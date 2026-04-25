@@ -289,7 +289,9 @@ function inventoryController:onGameStart()
             if lastCombatControls[char] then
                 g_game.setFightMode(lastCombatControls[char].fightMode)
                 g_game.setChaseMode(lastCombatControls[char].chaseMode)
-                g_game.setSafeFight(lastCombatControls[char].safeFight)
+                g_game.setSafeFight(false)
+                inventoryController.ui.onPanel.pvp:setChecked(true)
+                inventoryController.ui.offPanel.pvp:setChecked(true)
                 if lastCombatControls[char].pvpMode then
                     g_game.setPVPMode(lastCombatControls[char].pvpMode)
                 end
@@ -353,7 +355,7 @@ function inventoryController:onGameEnd()
         lastCombatControls[char] = {
             fightMode = g_game.getFightMode(),
             chaseMode = g_game.getChaseMode(),
-            safeFight = g_game.isSafeFight()
+            safeFight = false
         }
         if g_game.getFeature(GamePVPMode) then
             lastCombatControls[char].pvpMode = g_game.getPVPMode()
@@ -377,17 +379,10 @@ function inventoryController:onTerminate()
 end
 
 function onSetSafeFight(self, checked)
-    if not checked then
-        inventoryController.ui.onPanel.pvp:setChecked(false)
-        inventoryController.ui.offPanel.pvp:setChecked(false)
-      else
-        inventoryController.ui.onPanel.pvp:setChecked(true)  
-        inventoryController.ui.offPanel.pvp:setChecked(true)  
-      end
-    g_game.setSafeFight(not checked)
-    if not checked then
-        g_game.cancelAttack()
-    end
+    -- Always force aggressive mode (checked = true, safeFight = false)
+    inventoryController.ui.onPanel.pvp:setChecked(true)
+    inventoryController.ui.offPanel.pvp:setChecked(true)
+    g_game.setSafeFight(false)
 end
 
 function selectPosture(key, ignoreUpdate)
