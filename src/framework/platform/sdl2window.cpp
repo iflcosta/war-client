@@ -21,10 +21,10 @@
  */
 
 #include "sdl2window.h"
+#include <framework/global.h>
 #include <framework/core/clock.h>
 #include <framework/graphics/image.h>
 #include <framework/core/application.h>
-#include <framework/stdext/stdext.h>
 
 SDL2Window::SDL2Window()
 {
@@ -36,7 +36,7 @@ SDL2Window::SDL2Window()
 void SDL2Window::init()
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
-        g_logger.fatal(stdext::format("SDL could not initialize! SDL_Error: %s", SDL_GetError()));
+        g_logger.fatal("SDL could not initialize! SDL_Error: {}", SDL_GetError());
         return;
     }
 
@@ -49,13 +49,13 @@ void SDL2Window::init()
     
     m_window = SDL_CreateWindow("OTClient", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, windowFlags);
     if (!m_window) {
-        g_logger.fatal(stdext::format("Window could not be created! SDL_Error: %s", SDL_GetError()));
+        g_logger.fatal("Window could not be created! SDL_Error: {}", SDL_GetError());
         return;
     }
 
     m_context = SDL_GL_CreateContext(m_window);
     if (!m_context) {
-        g_logger.fatal(stdext::format("OpenGL context could not be created! SDL_Error: %s", SDL_GetError()));
+        g_logger.fatal("OpenGL context could not be created! SDL_Error: {}", SDL_GetError());
         return;
     }
 
