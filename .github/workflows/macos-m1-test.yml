@@ -52,7 +52,6 @@ jobs:
 
       - name: Configure and Build
         run: |
-          export PATH="/usr/local/bin:$PATH"
           cmake -G Ninja -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
@@ -65,8 +64,56 @@ jobs:
 
           cmake --build build --target otclient
 
+      - name: Package .app Bundle
+        run: |
+          brew install dylibbundler
+          
+          # Create bundle structure
+          mkdir -p "AethriumWar.app/Contents/MacOS"
+          mkdir -p "AethriumWar.app/Contents/Resources"
+          
+          # Copy binary
+          cp build/bin/otclient "AethriumWar.app/Contents/MacOS/"
+          
+          # Copy game data
+          cp -r data "AethriumWar.app/Contents/MacOS/"
+          cp -r modules "AethriumWar.app/Contents/MacOS/"
+          [ -d mods ] && cp -r mods "AethriumWar.app/Contents/MacOS/"
+          
+          # Create Info.plist
+          cat <<EOF > "AethriumWar.app/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>otclient</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.aethrium.otclient</string>
+              <key>CFBundleName</key>
+              <string>Aethrium War</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          # Fix library dependencies (Make it self-contained)
+          dylibbundler -od -b -x "AethriumWar.app/Contents/MacOS/otclient" -d "AethriumWar.app/Contents/libs/" -p "@executable_path/../libs/"
+          
+          # Create a ZIP of the bundle
+          zip -r AethriumWar_MacOS_M1.zip AethriumWar.app
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: otclient-macos-m1
-          path: build/bin/
+          name: otclient-macos-m1-app
+          path: AethriumWar_MacOS_M1.zip
