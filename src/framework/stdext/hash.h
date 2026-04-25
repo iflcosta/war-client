@@ -27,9 +27,17 @@ namespace stdext
     // Robin Hood lib
     constexpr size_t hash_int(size_t x) noexcept
     {
-        x ^= x >> 33U;
-        x *= UINT64_C(0xff51afd7ed558ccd);
-        x ^= x >> 33U;
+        if constexpr (sizeof(size_t) >= 8) {
+            x ^= x >> 33U;
+            x *= UINT64_C(0xff51afd7ed558ccd);
+            x ^= x >> 33U;
+        } else {
+            x ^= x >> 16U;
+            x *= 0x85ebca6bU;
+            x ^= x >> 13U;
+            x *= 0xc2b2ae35U;
+            x ^= x >> 16U;
+        }
         return x;
     }
 
