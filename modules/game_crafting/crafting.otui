@@ -1,0 +1,227 @@
+SkillProgressBar < UIProgressBar
+  height: 18
+  background-color: #3b3b3b
+  border: 1 black
+  margin-top: 5
+  margin-bottom: 5
+
+SkillLabel < Label
+  font: verdana-11px-monochrome
+  text-offset: 2 0
+  color: #dfdfdf
+
+PriorityButton < Button
+  width: 80
+  height: 20
+  margin-top: 2
+
+RecipeItem < Panel
+  height: 60
+  background-color: #444444
+  border: 1 black
+  margin-bottom: 5
+  padding: 5
+
+  Item
+    id: itemDisplay
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 48 48
+
+  Label
+    id: name
+    anchors.top: parent.top
+    anchors.left: itemDisplay.right
+    anchors.right: parent.right
+    margin-left: 10
+    font: verdana-11px-monochrome
+    color: #ffd700
+
+  Label
+    id: cost
+    anchors.top: name.bottom
+    anchors.left: itemDisplay.right
+    margin-left: 10
+    font: verdana-11px-monochrome
+    color: #dfdfdf
+
+  Button
+    id: craftButton
+    !text: tr('FORJAR')
+    width: 60
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 2
+    margin-right: 2
+
+MainWindow
+  id: craftingWindow
+  !text: tr('Aetherite Mastery & Forge')
+  size: 750 500
+  visible: false
+  @onEscape: self:hide()
+
+  Label
+    id: dustLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    !text: tr('Virtual Dust: 0')
+    color: #e6e600
+    font: verdana-11px-monochrome
+
+  Panel
+    id: skillsPanel
+    anchors.top: dustLabel.bottom
+    anchors.left: parent.left
+    width: 350
+    anchors.bottom: parent.bottom
+    margin-top: 15
+    layout: verticalBox
+    spacing: 15
+
+    Panel
+      id: coleta
+      height: 90
+      border: 1 #555555
+      padding: 10
+      layout: verticalBox
+
+      SkillLabel
+        id: title
+        !text: tr('Gathering Mastery (Coleta)')
+        color: #ffffff
+
+      SkillProgressBar
+        id: progress
+
+      Panel
+        layout: horizontalBox
+        height: 20
+        spacing: 10
+        SkillLabel
+          id: levelLabel
+          !text: tr('Level: 1')
+          width: 80
+        PriorityButton
+          id: setPriority1
+          !text: tr('1st Focus')
+        PriorityButton
+          id: setPriority2
+          !text: tr('2nd Focus')
+        PriorityButton
+          id: setPriority3
+          !text: tr('3rd Focus')
+
+    Panel
+      id: refino
+      height: 90
+      border: 1 #555555
+      padding: 10
+      layout: verticalBox
+      margin-top: 10
+
+      SkillLabel
+        id: title
+        !text: tr('Refining Mastery (Refino)')
+        color: #ffffff
+
+      SkillProgressBar
+        id: progress
+
+      Panel
+        layout: horizontalBox
+        height: 20
+        spacing: 10
+        SkillLabel
+          id: levelLabel
+          !text: tr('Level: 1')
+          width: 80
+        PriorityButton
+          id: setPriority1
+          !text: tr('1st Focus')
+        PriorityButton
+          id: setPriority2
+          !text: tr('2nd Focus')
+        PriorityButton
+          id: setPriority3
+          !text: tr('3rd Focus')
+
+    Panel
+      id: crafting
+      height: 90
+      border: 1 #555555
+      padding: 10
+      layout: verticalBox
+      margin-top: 10
+
+      SkillLabel
+        id: title
+        !text: tr('Aetherite Crafting')
+        color: #ffffff
+
+      SkillProgressBar
+        id: progress
+
+      Panel
+        layout: horizontalBox
+        height: 20
+        spacing: 10
+        SkillLabel
+          id: levelLabel
+          !text: tr('Level: 1')
+          width: 80
+        PriorityButton
+          id: setPriority1
+          !text: tr('1st Focus')
+        PriorityButton
+          id: setPriority2
+          !text: tr('2nd Focus')
+        PriorityButton
+          id: setPriority3
+          !text: tr('3rd Focus')
+
+  Label
+    id: recipesTitle
+    anchors.top: parent.top
+    anchors.left: skillsPanel.right
+    margin-left: 20
+    !text: tr('Crafting Recipes')
+    font: verdana-11px-monochrome
+    color: #ffffff
+
+  ScrollablePanel
+    id: recipeList
+    anchors.top: recipesTitle.bottom
+    anchors.left: skillsPanel.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-top: 10
+    margin-left: 20
+    margin-bottom: 40
+    vertical-scrollbar: recipeListScrollBar
+    layout: verticalBox
+    padding: 5
+
+  VerticalScrollBar
+    id: recipeListScrollBar
+    anchors.top: recipeList.top
+    anchors.bottom: recipeList.bottom
+    anchors.right: parent.right
+    step: 14
+    pixels-scroll: true
+
+  Button
+    id: closeButton
+    !text: tr('Close')
+    width: 64
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    @onClick: self:getParent():hide()
+
+  Button
+    id: refreshButton
+    !text: tr('Atualizar')
+    width: 80
+    anchors.left: recipesTitle.left
+    anchors.bottom: parent.bottom
+    @onClick: modules.game_crafting.refresh()

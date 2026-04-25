@@ -1,0 +1,313 @@
+InstDarkPanel < Panel
+  background-color: #FFFFFF08
+  border-width: 1
+  border-color: #FFFFFF15
+
+InstSeparator < UIWidget
+  height: 1
+  background-color: #FFFFFF18
+
+InstCurrencyBadge < Label
+  height: 16
+  font: terminus-10px
+  text-align: center
+  border-width: 1
+
+InstanceCard < InstDarkPanel
+  height: 176
+  width: 200
+  margin: 4
+
+  Label
+    id: cardTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 22
+    padding-left: 6
+    padding-top: 4
+    font: verdana-11px-rounded
+    color: #EEEEEE
+    text-wrap: false
+    text-auto-resize: false
+    background-color: #FFFFFF10
+
+  UICreature
+    id: cardCreature
+    anchors.top: cardTitle.bottom
+    anchors.left: parent.left
+    width: 64
+    height: 64
+    margin-top: 4
+    margin-left: 6
+    visible: false
+
+  Label
+    id: cardLevel
+    anchors.top: cardTitle.bottom
+    anchors.left: cardCreature.right
+    anchors.right: parent.right
+    height: 16
+    padding-left: 6
+    margin-top: 8
+    font: terminus-10px
+    color: #AAAAAA
+
+  Label
+    id: cardPrice
+    anchors.top: cardLevel.bottom
+    anchors.left: cardCreature.right
+    anchors.right: parent.right
+    height: 16
+    padding-left: 6
+    margin-top: 2
+    font: terminus-10px
+    color: #FFD700
+
+  Label
+    id: cardInfo
+    anchors.top: cardPrice.bottom
+    anchors.left: cardCreature.right
+    anchors.right: parent.right
+    height: 16
+    padding-left: 6
+    margin-top: 2
+    font: terminus-10px
+    color: #888888
+    text-wrap: false
+    text-auto-resize: false
+
+  Label
+    id: cardCooldown
+    anchors.top: cardCreature.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 14
+    padding-left: 6
+    margin-top: 2
+    font: terminus-10px
+    color: #FF6666
+    visible: false
+
+  Button
+    id: cardEnterBtn
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 0 4 4 4
+    height: 24
+    font: verdana-11px-rounded
+    color: #0D0D14
+    background-color: #00E5FF
+    border-width: 0
+    $hover:
+      background-color: #33EEFF
+    $pressed:
+      background-color: #009AB0
+    $disabled:
+      background-color: #444444
+      color: #888888
+
+
+InstancesWindow < MainWindow
+  id: instancesWindow
+  size: 660 520
+  !text: tr('Hunts & Boss Rooms')
+  @onEscape: modules.game_instances.toggle()
+
+  UIWidget
+    id: tabBar
+    height: 34
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    Button
+      id: tabHunts
+      !text: tr('Hunts')
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.horizontalCenter
+      margin-right: 2
+      font: verdana-11px-rounded
+      color: #00E5FF
+      background-color: #1A1A2E
+      border-width: 1
+      border-color: #00E5FF
+      @onClick: modules.game_instances.switchTab('hunts')
+
+    Button
+      id: tabBosses
+      !text: tr('Boss Rooms')
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.horizontalCenter
+      anchors.right: parent.right
+      margin-left: 2
+      font: verdana-11px-rounded
+      color: #888888
+      background-color: #0D0D14
+      border-width: 1
+      border-color: #333333
+      @onClick: modules.game_instances.switchTab('bosses')
+
+  InstSeparator
+    id: tabSep
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  UIWidget
+    id: filterBar
+    height: 28
+    anchors.top: tabSep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+    Label
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      text: 'Moeda:'
+      font: terminus-10px
+      color: #888888
+      margin-left: 4
+
+    Button
+      id: filterAll
+      text: 'Todas'
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      margin-left: 60
+      width: 55
+      height: 20
+      font: terminus-10px
+      @onClick: modules.game_instances.setFilter('all')
+
+    Button
+      id: filterCoins
+      text: 'Coins'
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: filterAll.right
+      margin-left: 4
+      width: 55
+      height: 20
+      font: terminus-10px
+      @onClick: modules.game_instances.setFilter('coins')
+
+    Button
+      id: filterTasks
+      text: 'Task Pts'
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: filterCoins.right
+      margin-left: 4
+      width: 65
+      height: 20
+      font: terminus-10px
+      @onClick: modules.game_instances.setFilter('tasks')
+
+    Label
+      id: playerResourcesLabel
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      margin-right: 8
+      font: terminus-10px
+      color: #AAAAAA
+
+  UIWidget
+    id: huntsPanel
+    anchors.top: filterBar.bottom
+    anchors.bottom: footerBar.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+    ScrollablePanel
+      id: huntsList
+      anchors.fill: parent
+      anchors.right: huntsScroll.left
+      padding: 4
+      vertical-scrollbar: huntsScroll
+      layout:
+        type: grid
+        cell-size: 210 158
+        cell-spacing: 4
+        flow: true
+
+    VerticalScrollBar
+      id: huntsScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 80
+      pixel-scroll: true
+
+  UIWidget
+    id: bossesPanel
+    anchors.top: filterBar.bottom
+    anchors.bottom: footerBar.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    visible: false
+
+    ScrollablePanel
+      id: bossesList
+      anchors.fill: parent
+      anchors.right: bossesScroll.left
+      padding: 4
+      vertical-scrollbar: bossesScroll
+      layout:
+        type: grid
+        cell-size: 210 158
+        cell-spacing: 4
+        flow: true
+
+    VerticalScrollBar
+      id: bossesScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 80
+      pixel-scroll: true
+
+  UIWidget
+    id: footerBar
+    height: 34
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+    InstSeparator
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+
+    Button
+      id: leaveBtn
+      !text: tr('Sair da Instancia')
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.left: parent.left
+      margin-left: 4
+      width: 140
+      height: 24
+      font: terminus-10px
+      color: #FF6666
+      background-color: #FF000022
+      border-width: 1
+      border-color: #FF4444
+      @onClick: modules.game_instances.leaveInstance()
+
+    Button
+      id: closeBtn
+      !text: tr('Fechar')
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      margin-right: 4
+      width: 80
+      height: 24
+      font: verdana-11px-rounded
+      @onClick: modules.game_instances.toggle()
