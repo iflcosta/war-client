@@ -71,14 +71,10 @@ jobs:
           # Create bundle structure
           mkdir -p "AethriumWar.app/Contents/MacOS"
           mkdir -p "AethriumWar.app/Contents/Resources"
+          mkdir -p "AethriumWar.app/Contents/libs"
           
           # Copy binary
           cp build/bin/otclient "AethriumWar.app/Contents/MacOS/"
-          
-          # Copy game data
-          cp -r data "AethriumWar.app/Contents/MacOS/"
-          cp -r modules "AethriumWar.app/Contents/MacOS/"
-          [ -d mods ] && cp -r mods "AethriumWar.app/Contents/MacOS/"
           
           # Create Info.plist
           cat <<EOF > "AethriumWar.app/Contents/Info.plist"
@@ -106,8 +102,20 @@ jobs:
           </plist>
           EOF
           
-          # Fix library dependencies (Make it self-contained)
+          # Fix library dependencies FIRST (before adding non-binary resources)
           dylibbundler -od -b -x "AethriumWar.app/Contents/MacOS/otclient" -d "AethriumWar.app/Contents/libs/" -p "@executable_path/../libs/"
+          
+          # Copy game data to Resources (Safe place)
+          cp -r data "AethriumWar.app/Contents/Resources/"
+          cp -r modules "AethriumWar.app/Contents/Resources/"
+          [ -d mods ] && cp -r mods "AethriumWar.app/Contents/Resources/"
+          
+          # Create symlinks in MacOS so the engine finds them
+          cd "AethriumWar.app/Contents/MacOS"
+          ln -s ../Resources/data data
+          ln -s ../Resources/modules modules
+          [ -d ../Resources/mods ] && ln -s ../Resources/mods mods
+          cd ../../..
           
           # Create a ZIP of the bundle
           zip -r AethriumWar_MacOS_M1.zip AethriumWar.app
