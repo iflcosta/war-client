@@ -1445,7 +1445,6 @@ function init()
     g_ui.importStyle('battlebutton')
     battleButton = modules.game_mainpanel.addToggleButton('battleButton', tr('Battle') .. ' (Ctrl+B)',
         '/images/options/button_battlelist', toggle, false, 2)
-    battleButton:setOn(true)
     battleWindow = g_ui.loadUI('battle')
 
     -- Initialize main instance

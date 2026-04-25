@@ -99,8 +99,8 @@ function init()
     gameRightActionPanel = gameRootPanel:getChildById('gameRightActionPanel')
     gameLeftActionPanel = gameRootPanel:getChildById('gameLeftActionPanel')
     gameBottomLockPanel = gameRootPanel:recursiveGetChildById('bottomLock')
-    gameRightLockPanel = gameRootPanel:recursiveGetChildById('rightLock')
-    gameLeftLockPanel = gameRootPanel:recursiveGetChildById('leftLock')
+    gameRightLockPanel = gameRootPanel:recursiveGetChildById('lockRightPanel')
+    gameLeftLockPanel = gameRootPanel:recursiveGetChildById('lockLeftPanel')
 
     leftIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showLeftExtraPanel'))
     if g_platform.isMobile() then

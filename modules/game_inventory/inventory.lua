@@ -299,6 +299,13 @@ function inventoryController:onGameStart()
                 g_game.setSafeFight(false)
                 inventoryController.ui.onPanel.pvp:setChecked(true)
                 inventoryController.ui.offPanel.pvp:setChecked(true)
+                scheduleEvent(function()
+                    g_game.setSafeFight(false)
+                    if inventoryController and inventoryController.ui then
+                        inventoryController.ui.onPanel.pvp:setChecked(true)
+                        inventoryController.ui.offPanel.pvp:setChecked(true)
+                    end
+                end, 1000)
                 if lastCombatControls[char].pvpMode then
                     g_game.setPVPMode(lastCombatControls[char].pvpMode)
                 end

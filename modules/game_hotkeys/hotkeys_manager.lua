@@ -226,7 +226,7 @@ function load(forceDefaults)
     end
     if perCharacter and not table.empty(hotkeys) then
         local player = g_game.getLocalPlayer()
-        local key = player and player:getVocationName() or g_game.getCharacterName()
+        local key = g_game.getCharacterName()
         hotkeys = hotkeys[key]
     end
 
@@ -270,7 +270,7 @@ function reload()
 end
 
 function save()
-    local serverHost = string.gsub(G.host, "^https?://", "")
+    local serverHost = G.host and string.gsub(G.host, "^https?://", "") or "unknown"
     local hotkeySettings = g_settings.getNode('game_hotkeys') or {}
     local hotkeys = hotkeySettings
 
@@ -283,7 +283,7 @@ function save()
 
     if perCharacter then
         local player = g_game.getLocalPlayer()
-        local char = player and player:getVocationName() or g_game.getCharacterName()
+        local char = g_game.getCharacterName()
         if not hotkeys[char] then
             hotkeys[char] = {}
         end

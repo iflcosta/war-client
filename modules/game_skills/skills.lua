@@ -101,7 +101,6 @@ function init()
 
     skillsButton = modules.game_mainpanel.addToggleButton('skillsButton', tr('Skills') .. ' (Alt+S)',
                                                                    '/images/options/button_skills', toggle, false, 1)
-    skillsButton:setOn(true)
     skillsWindow = g_ui.loadUI('skills')
     skillsWindow:setContentMinimumHeight(80)
 
@@ -122,7 +121,6 @@ function init()
     skillsWindow:setup()
     if g_game.isOnline() then
         online()
-        skillsWindow:setupOnStart()
     end
 end
 
@@ -786,6 +784,15 @@ end
 
 function online()
     skillsWindow:setupOnStart()
+    
+    -- Ensure the window has a parent if it's supposed to be open
+    if skillsWindow:isVisible() and not skillsWindow:getParent() then
+        local panel = modules.game_interface.findContentPanelAvailable(skillsWindow, skillsWindow:getMinimumHeight())
+        if panel then
+            panel:addChild(skillsWindow)
+        end
+    end
+
     refresh()
 
     local newWindowButton = skillsWindow:recursiveGetChildById('newWindowButton')
@@ -980,9 +987,8 @@ function offline()
 end
 
 function toggle()
-    if skillsButton:isOn() then
+    if skillsWindow:isVisible() then
         skillsWindow:close()
-        skillsButton:setOn(false)
     else
         if not skillsWindow:getParent() then
             local panel = modules.game_interface.findContentPanelAvailable(skillsWindow, skillsWindow:getMinimumHeight())
@@ -992,7 +998,6 @@ function toggle()
             panel:addChild(skillsWindow)
         end
         skillsWindow:open()
-        skillsButton:setOn(true)
         updateHeight()
     end
 end

@@ -107,37 +107,43 @@ end
 function resizeLockButtons()
     local rightLockPanel = modules.game_interface.getRightLockPanel()
     local rightCount = getActiveRightBars()
-    rightLockPanel:setVisible(true)
-    updateLockIcon(rightLockPanel, "actionBarRightLocked")
-    if rightCount >= 1 and rightCount <= 3 then
-        rightLockPanel:setWidth(35 + (rightCount - 1) * 36 - 1)
-        rightLockPanel:getParent():setWidth(((36 + (rightCount - 1) * 36)) + 1)
-    else
-        rightLockPanel:setWidth(0)
-        rightLockPanel:getParent():setWidth(0)
-        rightLockPanel:setVisible(false)
+    if rightLockPanel then
+        rightLockPanel:setVisible(true)
+        updateLockIcon(rightLockPanel, "actionBarRightLocked")
+        if rightCount >= 1 and rightCount <= 3 then
+            rightLockPanel:setWidth(35 + (rightCount - 1) * 36 - 1)
+            rightLockPanel:getParent():setWidth(((36 + (rightCount - 1) * 36)) + 1)
+        else
+            rightLockPanel:setWidth(0)
+            rightLockPanel:getParent():setWidth(0)
+            rightLockPanel:setVisible(false)
+        end
     end
     local bottomLockPanel = modules.game_interface.getBottomLockPanel()
     local bottomCount = getActiveBottomBars()
-    bottomLockPanel:setVisible(true)
-    updateLockIcon(bottomLockPanel, "actionBarBottomLocked")
-    if bottomCount >= 1 and bottomCount <= 3 then
-        bottomLockPanel:setHeight(34 + (bottomCount - 1) * 36)
-    else
-        bottomLockPanel:setHeight(0)
-        bottomLockPanel:setVisible(false)
+    if bottomLockPanel then
+        bottomLockPanel:setVisible(true)
+        updateLockIcon(bottomLockPanel, "actionBarBottomLocked")
+        if bottomCount >= 1 and bottomCount <= 3 then
+            bottomLockPanel:setHeight(34 + (bottomCount - 1) * 36)
+        else
+            bottomLockPanel:setHeight(0)
+            bottomLockPanel:setVisible(false)
+        end
     end
     local leftLockPanel = modules.game_interface.getLeftLockPanel()
     local leftCount = getActiveLeftBars()
-    leftLockPanel:setVisible(true)
-    updateLockIcon(leftLockPanel, "actionBarLeftLocked")
-    if leftCount >= 1 and leftCount <= 3 then
-        leftLockPanel:setWidth(35 + (leftCount - 1) * 36 - 1)
-        leftLockPanel:getParent():setWidth(((36 + (leftCount - 1) * 36)) + 1)
-    else
-        leftLockPanel:setWidth(0)
-        leftLockPanel:getParent():setWidth(0)
-        leftLockPanel:setVisible(false)
+    if leftLockPanel then
+        leftLockPanel:setVisible(true)
+        updateLockIcon(leftLockPanel, "actionBarLeftLocked")
+        if leftCount >= 1 and leftCount <= 3 then
+            leftLockPanel:setWidth(35 + (leftCount - 1) * 36)
+            leftLockPanel:getParent():setWidth(((36 + (leftCount - 1) * 36)) + 1)
+        else
+            leftLockPanel:setWidth(0)
+            leftLockPanel:getParent():setWidth(0)
+            leftLockPanel:setVisible(false)
+        end
     end
 end
 
