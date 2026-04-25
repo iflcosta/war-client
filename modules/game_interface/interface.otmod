@@ -13,9 +13,6 @@ Module
     - game_healthinfo
     - game_inventory
     - game_mainpanel
-    - game_prey
-    - game_imbuing
-    - game_imbuementtracker
     - game_hotkeys
     - game_questlog
     - game_textmessage
@@ -35,27 +32,18 @@ Module
     - game_ruleviolation
     - game_market
     - game_spelllist
-    - game_cooldown
     - game_modaldialog
     - game_unjustifiedpoints
     - game_shaders
     - game_attachedeffects
     - game_paperdolls
-    - game_stash
-    - game_healthcircle
     - game_shop
     - game_screenshot
     - game_highscore
     - game_blessing
     - game_store
-    - game_quickloot
-    - game_cyclopedia
     - game_creatureinformation
-    - game_rewardwall
-    - game_forge
     - game_vip
-    - game_reset
-    - game_battlepass_otui
     - game_instances
   @onLoad: init()
   @onUnload: terminate()

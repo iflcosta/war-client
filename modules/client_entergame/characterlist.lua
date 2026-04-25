@@ -371,9 +371,13 @@ function CharacterList.create(characters, account, otui)
             characterList:ensureChildVisible(focusLabel)
         end)
     end
-    characterList.onChildFocusChange = function()
+    characterList.onChildFocusChange = function(self, focusedChild)
+        if focusedChild then
+            self:ensureChildVisible(focusedChild)
+        end
         removeAutoReconnectEvent()
     end
+    characterList:focus()
 
     -- account
     local status = ''
@@ -435,6 +439,15 @@ function CharacterList.show()
     charactersWindow:show()
     charactersWindow:raise()
     charactersWindow:focus()
+    scheduleEvent(function()
+        if charactersWindow then
+            charactersWindow:raise()
+            charactersWindow:focus()
+        end
+        if characterList then
+            characterList:focus()
+        end
+    end, 400)
 
     local autoReconnect = g_settings.getBoolean('autoReconnect', false)
     autoReconnectButton:setOn(autoReconnect)

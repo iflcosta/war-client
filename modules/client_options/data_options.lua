@@ -512,7 +512,9 @@ return {
     showSpellGroupCooldowns           = {
         value = true,
         action = function(value, options, controller, panels, extraWidgets)
-            modules.game_cooldown.setSpellGroupCooldownsVisible(value)
+            if modules.game_cooldown and modules.game_cooldown.setSpellGroupCooldownsVisible then
+                modules.game_cooldown.setSpellGroupCooldownsVisible(value)
+            end
         end
     },
     dontStretchShrink                 = {

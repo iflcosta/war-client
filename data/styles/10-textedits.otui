@@ -86,7 +86,9 @@ HiddenTextQtToggleEdit < TextQtEdit
   text-hidden: true
 
   UICheckBox
+    id: eyeBox
     size: 19 20
+    focusable: false
     anchors.right: parent.right
     margin-right: -2
     anchors.verticalCenter: parent.verticalCenter

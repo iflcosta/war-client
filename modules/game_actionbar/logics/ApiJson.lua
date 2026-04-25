@@ -242,38 +242,30 @@ local function rebuildStateFromArray()
     array.options = options.clientOptions
 
     local actionBar = {}
+    -- [classic 8.6 mode] force all action bars hidden
     local lockedBottom = g_settings.getBoolean("actionBarBottomLocked") or false
     for i = 1, 3 do
-        local isVisible = g_settings.getBoolean("actionBarShowBottom" .. i)
-        if isVisible == nil then
-            isVisible = (i == 1) -- Default: only first bar visible
-        end
+        g_settings.set("actionBarShowBottom" .. i, false)
         actionBar[#actionBar + 1] = {
-            isVisible = isVisible,
+            isVisible = false,
             isLocked = lockedBottom and true or false
         }
     end
 
     local lockedLeft = g_settings.getBoolean("actionBarLeftLocked") or false
     for i = 1, 3 do
-        local isVisible = g_settings.getBoolean("actionBarShowLeft" .. i)
-        if isVisible == nil then
-            isVisible = false
-        end
+        g_settings.set("actionBarShowLeft" .. i, false)
         actionBar[#actionBar + 1] = {
-            isVisible = isVisible,
+            isVisible = false,
             isLocked = lockedLeft and true or false
         }
     end
 
     local lockedRight = g_settings.getBoolean("actionBarRightLocked") or false
     for i = 1, 3 do
-        local isVisible = g_settings.getBoolean("actionBarShowRight" .. i)
-        if isVisible == nil then
-            isVisible = false
-        end
+        g_settings.set("actionBarShowRight" .. i, false)
         actionBar[#actionBar + 1] = {
-            isVisible = isVisible,
+            isVisible = false,
             isLocked = lockedRight and true or false
         }
     end

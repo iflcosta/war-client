@@ -51,8 +51,8 @@ UIWidget
 
   GameMapPanel
     id: gameMapPanel
-    anchors.left: gameLeftActionPanel.right
-    anchors.right: gameRightActionPanel.left
+    anchors.left: gameLeftExtraPanel.right
+    anchors.right: gameRightExtraPanel.left
     anchors.top: gameTopPanel.bottom
     anchors.bottom: bottomSplitter.top
     focusable: false
@@ -67,84 +67,32 @@ UIWidget
       height: 32
       visible: false
 
-// actionbar
+// actionbar (hidden - classic 8.6 mode)
   Panel
     id: gameLeftActionPanel
     phantom: true
     focusable: false
-    anchors.top: gameTopPanel.bottom
-    anchors.left: gameLeftExtraPanel.right
-    anchors.bottom: bottomSplitter.top
-    padding-top: 1
-    margin-left: 1
-    border-width-right: 1
-    border-color-right: #292929
-    width: 36
-    image-source: /images/ui/actionbar/actionbar_background-light
-    image-border: 1
-    margin-bottom: 16
-    padding-right: 3 
-    layout:
-      type: horizontalBox
-      fit-children: true
-      spacing: 2
+    visible: false
+    width: 0
+    height: 0
   UIWidget
     id: lockLeftPanel
-    size: 38 16
-    anchors.top: gameLeftActionPanel.bottom
-    anchors.left: gameLeftActionPanel.left
-    border-width-right: 1
-    border-color-right: #292929
-    image-source: /images/ui/actionbar/actionbar_background-light
-    Button
-      id: leftLock
-      size: 34 16
-      anchors.top: parent.top
-      anchors.right: parent.right
-      margin-right: 1
-      @onClick: modules.game_actionbar.changeLockStatus(self, "Left")
-      $pressed:
-        icon-offset: 1 1
+    visible: false
+    width: 0
+    height: 0
 
   Panel
     id: gameRightActionPanel
     phantom: true
     focusable: false
-    anchors.top: gameTopPanel.bottom
-    anchors.right: gameRightExtraPanel.left
-    anchors.bottom: bottomSplitter.top
-    margin-right: 1
-    margin-top: 1
-    border-width-left: 1
-    border-color-left: #747474
-    width: 36
-    image-source: /images/ui/actionbar/actionbar_background-light
-    image-border: 1
-    margin-bottom: 16
-    padding-left: 3
-
-    layout:
-      type: horizontalBox
-      fit-children: true
-      spacing: 2
+    visible: false
+    width: 0
+    height: 0
   UIWidget
     id: lockRightPanel
-    size: 38 16
-    anchors.top: gameRightActionPanel.bottom
-    anchors.right: gameRightActionPanel.right
-    border-width-left: 1
-    border-color-left: #747474
-    image-source: /images/ui/actionbar/actionbar_background-light
-
-    Button
-      id: rightLock
-      size: 34 16
-      anchors.top: parent.top
-      anchors.right: parent.right
-      margin-right: 1
-      @onClick: modules.game_actionbar.changeLockStatus(self, "Right")
-      $pressed:
-        icon-offset: 1 1
+    visible: false
+    width: 0
+    height: 0
   Panel
     id: gameBottomActionPanel
     phantom: true
@@ -291,7 +239,7 @@ UIWidget
     @canUpdateMargin: |
       function(self, newMargin)
         local dontStretch = modules.client_options.getOption('dontStretchShrink')
-        local actionBars = modules.game_actionbar.getActiveBottomBars()
+        local actionBars = (modules.game_actionbar and modules.game_actionbar.getActiveBottomBars and modules.game_actionbar.getActiveBottomBars()) or 0
         local maxHeight = 118 + (35 * actionBars)
         local result = math.max(math.min(newMargin, self:getParent():getHeight() - 150), maxHeight)
         if dontStretch then
@@ -301,7 +249,7 @@ UIWidget
       end
     @onGeometryChange: |
       function(self)
-        local actionBars = modules.game_actionbar.getActiveBottomBars()
+        local actionBars = (modules.game_actionbar and modules.game_actionbar.getActiveBottomBars and modules.game_actionbar.getActiveBottomBars()) or 0
         local maxHeight = 118 + (35 * actionBars)
         local parentHeight = self:getParent():getHeight()
         self:setMarginBottom(math.min(math.max(parentHeight - 150, maxHeight), self:getMarginBottom()))

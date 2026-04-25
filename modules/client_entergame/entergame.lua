@@ -222,6 +222,26 @@ function EnterGame.init()
     if g_app.isRunning() and not g_game.isOnline() then
         enterGame:show()
     end
+
+    -- Tab Focus Switch (Direct Widget Option)
+    local accountNameTextEdit = enterGame:getChildById('accountNameTextEdit')
+    local accountPasswordTextEdit = enterGame:getChildById('accountPasswordTextEdit')
+
+    accountNameTextEdit.onKeyPress = function(self, keyCode, keyboardModifiers)
+        if keyCode == KeyTab or keyCode == KeyDown then
+            accountPasswordTextEdit:focus()
+            accountPasswordTextEdit:setCursorPos(-1)
+            return true
+        end
+    end
+
+    accountPasswordTextEdit.onKeyPress = function(self, keyCode, keyboardModifiers)
+        if keyCode == KeyTab or keyCode == KeyUp then
+            accountNameTextEdit:focus()
+            accountNameTextEdit:setCursorPos(-1)
+            return true
+        end
+    end
 end
 
 function EnterGame.hidePanels()
@@ -465,6 +485,10 @@ function EnterGame.show()
     enterGame:show()
     enterGame:raise()
     enterGame:focus()
+
+    local accountNameTextEdit = enterGame:getChildById('accountNameTextEdit')
+    accountNameTextEdit:focus()
+    accountNameTextEdit:setCursorPos(-1)
 end
 
 function EnterGame.hide()
