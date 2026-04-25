@@ -1,4 +1,4 @@
-﻿project(otclient)
+project(otclient)
 
 # *****************************************************************************
 # Options
@@ -793,6 +793,7 @@ else() # Linux
           absl::log_internal_check_op
           Threads::Threads
           $<$<PLATFORM_ID:Darwin>:SDL2::SDL2>
+          $<$<PLATFORM_ID:Darwin>:-framework OpenGL>
           $<$<NOT:$<PLATFORM_ID:Darwin>>:X11::X11>
           asio::asio
           OpenAL::OpenAL
