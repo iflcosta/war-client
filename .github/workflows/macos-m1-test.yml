@@ -1,0 +1,62 @@
+name: Build - MacOS M1 (SDL2)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  actions: write
+
+env:
+  VCPKG_BINARY_SOURCES: 'clear'
+
+jobs:
+  build:
+    name: MacOS M1 Build (SDL2)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install MacOS Dependencies
+        run: |
+          brew install ccache ninja
+
+      - name: Get vcpkg commit ID
+        id: vcpkg-step
+        run: |
+          vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
+          echo "vcpkgGitCommitId=$vcpkgCommitId" >> $GITHUB_OUTPUT
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@v3.29.2
+
+      - name: Configure and Build
+        run: |
+          export PATH="/usr/local/bin:$PATH"
+          cmake -G Ninja -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DCMAKE_MAKE_PROGRAM=$(which ninja) \
+            -DTOGGLE_BIN_FOLDER=ON \
+            -DOPTIONS_ENABLE_IPO=OFF \
+            -DX_VCPKG_BINARY_CACHING=OFF
+
+          cmake --build build --target otclient
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: otclient-macos-m1
+          path: build/bin/
