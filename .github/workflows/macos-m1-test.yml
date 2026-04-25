@@ -38,7 +38,6 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
-          runVcpkgInstall: true
 
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@v3.29.2
