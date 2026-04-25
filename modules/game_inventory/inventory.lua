@@ -109,6 +109,13 @@ local function combatEvent()
     elseif g_game.getFightMode() == FightDefensive then
         selectCombat('defense', true)
     end
+
+    -- Force aggressive mode (Safe Fight OFF)
+    if g_game.isSafeFight() then
+        g_game.setSafeFight(false)
+    end
+    inventoryController.ui.onPanel.pvp:setChecked(true)
+    inventoryController.ui.offPanel.pvp:setChecked(true)
 end
 
 local function inventoryEvent(player, slot, item, oldItem)
