@@ -38,9 +38,18 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+          runVcpkgInstall: true
 
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@v3.29.2
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: macos-m1-ccache-${{ github.sha }}
+          restore-keys: |
+            macos-m1-ccache-
 
       - name: Configure and Build
         run: |
@@ -48,9 +57,11 @@ jobs:
           cmake -G Ninja -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_TARGET_TRIPLET=arm64-osx \
             -DCMAKE_MAKE_PROGRAM=$(which ninja) \
             -DTOGGLE_BIN_FOLDER=ON \
             -DOPTIONS_ENABLE_IPO=OFF \
+            -DOPTIONS_ENABLE_CCACHE=ON \
             -DX_VCPKG_BINARY_CACHING=OFF
 
           cmake --build build --target otclient
