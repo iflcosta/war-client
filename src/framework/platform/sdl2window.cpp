@@ -24,6 +24,7 @@
 #include <framework/core/clock.h>
 #include <framework/graphics/image.h>
 #include <framework/core/application.h>
+#include <framework/stdext/stdext.h>
 
 SDL2Window::SDL2Window()
 {
@@ -39,10 +40,10 @@ void SDL2Window::init()
         return;
     }
 
-    SDL_GL_set_attribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_set_attribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_set_attribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_set_attribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     uint32_t windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
     
