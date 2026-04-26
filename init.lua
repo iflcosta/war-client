@@ -11,7 +11,7 @@ Services = {
 }
 
 Servers_init = {
-    ["wwar.servegame.com"] = {
+    ["worldwar.com.br"] = {
         ["port"] = 7171,
         ["protocol"] = 860,
         ["httpLogin"] = false

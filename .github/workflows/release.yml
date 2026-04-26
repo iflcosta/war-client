@@ -1,0 +1,258 @@
+name: Release - Windows, macOS, Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do release (ex: v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+env:
+  VCPKG_BINARY_SOURCES: 'clear'
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get vcpkg commit ID
+        id: vcpkg-step
+        shell: pwsh
+        run: |
+          $json = Get-Content vcpkg.json -Raw | ConvertFrom-Json
+          $commit = $json.'builtin-baseline'
+          echo "vcpkgGitCommitId=$commit" >> $env:GITHUB_OUTPUT
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/vcpkg/installed
+            ${{ github.workspace }}/vcpkg/buildtrees
+            ${{ github.workspace }}/vcpkg/downloads
+          key: vcpkg-windows-${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+          restore-keys: vcpkg-windows-
+
+      - name: CCache (sccache)
+        uses: hendrikmuhs/ccache-action@main
+        with:
+          max-size: "1G"
+          variant: "sccache"
+          key: ccache-windows-release
+
+      - name: Remove pre-installed MySQL
+        run: Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "C:/mysql*"
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@a400452f634fe49e9f18d388aeb1809dcc642136
+        with:
+          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+
+      - name: Get CMake and Ninja
+        uses: lukka/get-cmake@v3.31.6
+
+      - name: Configure and Build
+        uses: lukka/run-cmake@main
+        with:
+          configurePreset: windows-release
+          buildPreset: windows-release
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          $artifactDir = "$env:GITHUB_WORKSPACE\artifacts-windows"
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+          $exe = Get-ChildItem -Recurse -Path $env:GITHUB_WORKSPACE -Filter "otclient*.exe" | Select-Object -First 1
+          if (-not $exe) { Write-Error "otclient*.exe not found!"; exit 1 }
+          Copy-Item $exe.FullName -Destination $artifactDir
+          Get-ChildItem -Path $exe.Directory.FullName -Filter "*.dll" | ForEach-Object {
+            Copy-Item $_.FullName -Destination $artifactDir
+          }
+          # include data folder if present
+          $dataDir = Join-Path $exe.Directory.FullName "data"
+          if (Test-Path $dataDir) { Copy-Item $dataDir -Destination $artifactDir -Recurse }
+
+      - name: Zip Windows artifact
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "$env:GITHUB_WORKSPACE\artifacts-windows\*" `
+            -DestinationPath "$env:GITHUB_WORKSPACE\worldwar-client-windows.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldwar-client-windows
+          path: worldwar-client-windows.zip
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: brew install ccache ninja
+
+      - name: Get vcpkg commit ID
+        id: vcpkg-step
+        run: |
+          vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
+          echo "vcpkgGitCommitId=$vcpkgCommitId" >> $GITHUB_OUTPUT
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg
+          key: vcpkg-macos-${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+          restore-keys: vcpkg-macos-
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+
+      - name: Get CMake and Ninja
+        uses: lukka/get-cmake@v3.29.2
+
+      - name: Configure and Build
+        run: |
+          export PATH="/usr/local/bin:$PATH"
+          cmake -G Ninja -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DCMAKE_MAKE_PROGRAM=$(which ninja) \
+            -DTOGGLE_BIN_FOLDER=ON \
+            -DOPTIONS_ENABLE_IPO=OFF \
+            -DX_VCPKG_BINARY_CACHING=OFF
+          cmake --build build --target otclient
+
+      - name: Zip macOS artifact
+        run: |
+          cd build/bin
+          zip -r $GITHUB_WORKSPACE/worldwar-client-macos.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldwar-client-macos
+          path: worldwar-client-macos.zip
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: echo "y" | sdkmanager "ndk;25.2.9519653" "cmake;3.22.1"
+
+      - name: Get vcpkg commit ID
+        id: vcpkg-step
+        run: |
+          vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
+          echo "vcpkgGitCommitId=$vcpkgCommitId" >> $GITHUB_OUTPUT
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+
+      - name: Build native libs via CMake (arm64-v8a)
+        run: |
+          NDK_PATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653
+          cmake -S . -B build-android \
+            -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-24 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVCPKG_TARGET_ANDROID=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake
+          cmake --build build-android --target otclient -j$(nproc)
+
+      - name: Copy .so to Android libs folder
+        run: |
+          mkdir -p android/app/libs/lib/arm64-v8a
+          find build-android -name "libotclient.so" -exec cp {} android/app/libs/lib/arm64-v8a/ \;
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Locate and rename APK
+        run: |
+          APK=$(find android -name "*.apk" | head -1)
+          cp "$APK" worldwar-client-android.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldwar-client-android
+          path: worldwar-client-android.apk
+
+  release:
+    name: Create GitHub Release
+    needs: [build-windows, build-macos, build-android]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: "World War Client ${{ github.event.inputs.version }}"
+          body: |
+            ## World War Client ${{ github.event.inputs.version }}
+
+            Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
+
+            ### Downloads
+            | Plataforma | Arquivo |
+            |---|---|
+            | 🪟 Windows | `worldwar-client-windows.zip` |
+            | 🍎 macOS | `worldwar-client-macos.zip` |
+            | 🤖 Android | `worldwar-client-android.apk` |
+
+            ### Como conectar
+            - **Windows/macOS**: Extraia e execute o cliente. O servidor já vem configurado.
+            - **Android**: Instale o APK e conecte em `worldwar.com.br`.
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/worldwar-client-windows/worldwar-client-windows.zip
+            artifacts/worldwar-client-macos/worldwar-client-macos.zip
+            artifacts/worldwar-client-android/worldwar-client-android.apk
