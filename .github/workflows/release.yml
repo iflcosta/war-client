@@ -78,21 +78,30 @@ jobs:
           Get-ChildItem -Path $exe.Directory.FullName -Filter "*.dll" | ForEach-Object {
             Copy-Item $_.FullName -Destination $artifactDir
           }
-          # include data folder if present
           $dataDir = Join-Path $exe.Directory.FullName "data"
           if (Test-Path $dataDir) { Copy-Item $dataDir -Destination $artifactDir -Recurse }
 
-      - name: Zip Windows artifact
+      - name: Zip artifact
         shell: pwsh
         run: |
           Compress-Archive -Path "$env:GITHUB_WORKSPACE\artifacts-windows\*" `
             -DestinationPath "$env:GITHUB_WORKSPACE\worldwar-client-windows.zip"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Windows Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: worldwar-client-windows
-          path: worldwar-client-windows.zip
+          tag_name: ${{ github.event.inputs.version }}-windows
+          name: "World War Client ${{ github.event.inputs.version }} - Windows"
+          body: |
+            ## World War Client ${{ github.event.inputs.version }} — Windows
+
+            Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
+
+            ### Como usar
+            Extraia o zip e execute `otclient*.exe`. O servidor já vem configurado.
+          draft: false
+          prerelease: false
+          files: worldwar-client-windows.zip
 
   build-macos:
     name: Build macOS
@@ -140,16 +149,26 @@ jobs:
             -DX_VCPKG_BINARY_CACHING=OFF
           cmake --build build --target otclient
 
-      - name: Zip macOS artifact
+      - name: Zip artifact
         run: |
           cd build/bin
           zip -r $GITHUB_WORKSPACE/worldwar-client-macos.zip .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create macOS Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: worldwar-client-macos
-          path: worldwar-client-macos.zip
+          tag_name: ${{ github.event.inputs.version }}-macos
+          name: "World War Client ${{ github.event.inputs.version }} - macOS"
+          body: |
+            ## World War Client ${{ github.event.inputs.version }} — macOS
+
+            Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
+
+            ### Como usar
+            Extraia o zip e execute o binário `otclient`. O servidor já vem configurado.
+          draft: false
+          prerelease: false
+          files: worldwar-client-macos.zip
 
   build-android:
     name: Build Android
@@ -184,17 +203,16 @@ jobs:
         with:
           vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
 
-      - name: Build native libs via CMake (arm64-v8a)
+      - name: Build native libs (arm64-v8a)
         run: |
           NDK_PATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653
           cmake -S . -B build-android \
-            -DCMAKE_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-24 \
             -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_TARGET_ANDROID=ON \
-            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake
+            -DVCPKG_TARGET_ANDROID=ON
           cmake --build build-android --target otclient -j$(nproc)
 
       - name: Copy .so to Android libs folder
@@ -208,51 +226,23 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Locate and rename APK
+      - name: Locate APK
         run: |
           APK=$(find android -name "*.apk" | head -1)
           cp "$APK" worldwar-client-android.apk
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: worldwar-client-android
-          path: worldwar-client-android.apk
-
-  release:
-    name: Create GitHub Release
-    needs: [build-windows, build-macos, build-android]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Release
+      - name: Create Android Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          name: "World War Client ${{ github.event.inputs.version }}"
+          tag_name: ${{ github.event.inputs.version }}-android
+          name: "World War Client ${{ github.event.inputs.version }} - Android"
           body: |
-            ## World War Client ${{ github.event.inputs.version }}
+            ## World War Client ${{ github.event.inputs.version }} — Android
 
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
-            ### Downloads
-            | Plataforma | Arquivo |
-            |---|---|
-            | 🪟 Windows | `worldwar-client-windows.zip` |
-            | 🍎 macOS | `worldwar-client-macos.zip` |
-            | 🤖 Android | `worldwar-client-android.apk` |
-
-            ### Como conectar
-            - **Windows/macOS**: Extraia e execute o cliente. O servidor já vem configurado.
-            - **Android**: Instale o APK e conecte em `worldwar.com.br`.
+            ### Como usar
+            Baixe e instale o APK. Pode ser necessário habilitar "Fontes desconhecidas" nas configurações do Android.
           draft: false
           prerelease: false
-          files: |
-            artifacts/worldwar-client-windows/worldwar-client-windows.zip
-            artifacts/worldwar-client-macos/worldwar-client-macos.zip
-            artifacts/worldwar-client-android/worldwar-client-android.apk
+          files: worldwar-client-android.apk
