@@ -224,10 +224,14 @@ jobs:
             -DALSOFT_UTILS=OFF \
             -DALSOFT_EXAMPLES=OFF \
             -DALSOFT_TESTS=OFF \
-            -DBUILD_SHARED_LIBS=OFF
+            -DBUILD_SHARED_LIBS=OFF \
+            -DALSOFT_BUILD_IMPORT_LIB=OFF \
+            -DLIBTYPE=STATIC
           cmake --build /tmp/openal-build -j$(nproc)
 
-          cp /tmp/openal-build/libopenal.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/
+          # pode sair como libopenal.a ou libOpenAL.a dependendo da versão
+          find /tmp/openal-build -name "libopenal.a" -o -name "libOpenAL.a" | head -1 | \
+            xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libopenal.a
 
       - name: Build Minizip for Android arm64
         run: |
