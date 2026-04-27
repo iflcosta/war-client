@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão do release (ex: v1.0.0)'
+        description: 'Versão do release (ex: v1.0.2)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.0.2'
 
 permissions:
   contents: write
@@ -71,38 +71,30 @@ jobs:
             -DTOGGLE_BIN_FOLDER=ON \
             -DOPTIONS_ENABLE_IPO=OFF \
             -DOPTIONS_ENABLE_CCACHE=ON \
+            -DOTCLIENT_BUILD_TESTS=OFF \
             -DX_VCPKG_BINARY_CACHING=OFF
           cmake --build build --target otclient
 
       - name: Package .app bundle
         run: |
           mkdir -p "WorldWar.app/Contents/MacOS"
-          mkdir -p "WorldWar.app/Contents/Resources"
           mkdir -p "WorldWar.app/Contents/libs"
 
           cp build/bin/otclient "WorldWar.app/Contents/MacOS/"
 
-          cat <<EOF > "WorldWar.app/Contents/Info.plist"
+          cat > "WorldWar.app/Contents/Info.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-              <key>CFBundleExecutable</key>
-              <string>otclient</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.worldwar.otclient</string>
-              <key>CFBundleName</key>
-              <string>World War</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleVersion</key>
-              <string>${{ github.event.inputs.version }}</string>
-              <key>CFBundleShortVersionString</key>
-              <string>${{ github.event.inputs.version }}</string>
-              <key>LSMinimumSystemVersion</key>
-              <string>11.0</string>
-              <key>NSHighResolutionCapable</key>
-              <true/>
+              <key>CFBundleExecutable</key><string>otclient</string>
+              <key>CFBundleIdentifier</key><string>com.worldwar.otclient</string>
+              <key>CFBundleName</key><string>World War</string>
+              <key>CFBundlePackageType</key><string>APPL</string>
+              <key>CFBundleVersion</key><string>${{ github.event.inputs.version }}</string>
+              <key>CFBundleShortVersionString</key><string>${{ github.event.inputs.version }}</string>
+              <key>LSMinimumSystemVersion</key><string>11.0</string>
+              <key>NSHighResolutionCapable</key><true/>
           </dict>
           </plist>
           EOF
@@ -119,9 +111,7 @@ jobs:
           cp config.ini "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
           cp cacert.pem "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
 
-          # Assinatura ad-hoc para passar pelo Gatekeeper
           codesign --deep --force --sign - WorldWar.app
-
           zip -r worldwar-client-macos.zip WorldWar.app
 
       - name: Create macOS Release
@@ -135,14 +125,14 @@ jobs:
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
             ### Como usar
-            Extraia o zip, clique com botão direito em `WorldWar.app` → **Abrir**. O servidor já vem configurado.
+            Extraia o zip, **clique com botão direito** em `WorldWar.app` → **Abrir** → confirme. Após isso abre normalmente.
           draft: false
           prerelease: false
           files: worldwar-client-macos.zip
 
   build-android:
     name: Build Android
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -158,12 +148,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install NDK and CMake
-        run: |
-          echo "y" | sdkmanager "cmake;3.22.1"
-          NDK_VER=$(ls $ANDROID_SDK_ROOT/ndk/ | sort -V | tail -1)
-          echo "NDK_VERSION=$NDK_VER" >> $GITHUB_ENV
 
       - name: Download game assets (dat/spr)
         run: |
@@ -188,41 +172,19 @@ jobs:
         with:
           vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
 
-      - name: Build native libs (arm64-v8a)
-        run: |
-          NDK_PATH=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION
-          cmake -S . -B build-android \
-            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
-            -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=android-24 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_TARGET_ANDROID=ON
-          cmake --build build-android --target otclient -j$(nproc)
-
-      - name: Copy .so to Android libs folder
-        run: |
-          mkdir -p android/app/libs/lib/arm64-v8a
-          find build-android -name "libotclient.so" -exec cp {} android/app/libs/lib/arm64-v8a/ \;
-
-      - name: Bundle data.zip for Android assets
-        run: |
-          ASSETS_DIR=android/app/src/main/assets
-          rm -f $ASSETS_DIR/data.zip
-          zip -r $ASSETS_DIR/data.zip \
-            data/ modules/ mods/ init.lua otclientrc.lua config.ini cacert.pem \
-            --exclude "data/things/*" 2>/dev/null || true
-          zip -r $ASSETS_DIR/data.zip data/things/860/
-
-      - name: Build APK
+      - name: Build APK via Gradle
         working-directory: android
         run: |
+          export VCPKG_ROOT=${{ github.workspace }}/vcpkg
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
-      - name: Locate APK
+      - name: Locate and rename APK
         run: |
-          APK=$(find android -name "*.apk" | head -1)
+          APK=$(find android -name "*.apk" | grep -v "unaligned" | head -1)
+          echo "Found APK: $APK"
           cp "$APK" worldwar-client-android.apk
 
       - name: Create Android Release
@@ -236,7 +198,7 @@ jobs:
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
             ### Como usar
-            Baixe e instale o APK. Pode ser necessário habilitar "Fontes desconhecidas" nas configurações do Android.
+            Baixe e instale o APK. Pode ser necessário habilitar **"Instalar apps desconhecidos"** nas configurações.
           draft: false
           prerelease: false
           files: worldwar-client-android.apk
