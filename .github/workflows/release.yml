@@ -134,6 +134,11 @@ jobs:
     name: Build Android
     runs-on: ubuntu-latest
 
+    env:
+      NDK_VERSION: "27.2.12479018"
+      ANDROID_API: "24"
+      ABI: "arm64-v8a"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,6 +154,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install NDK and CMake
+        run: |
+          echo "y" | sdkmanager "ndk;${{ env.NDK_VERSION }}" "cmake;3.22.1"
+
       - name: Download game assets (dat/spr)
         run: |
           gh release download v1.0.0-assets \
@@ -160,6 +169,84 @@ jobs:
           cp /tmp/things_tmp/860/* data/things/860/
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set NDK paths
+        run: |
+          NDK_PATH=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VERSION }}
+          TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
+          echo "NDK_PATH=$NDK_PATH" >> $GITHUB_ENV
+          echo "TOOLCHAIN=$TOOLCHAIN" >> $GITHUB_ENV
+          echo "CC=$TOOLCHAIN/bin/aarch64-linux-android${{ env.ANDROID_API }}-clang" >> $GITHUB_ENV
+          echo "CXX=$TOOLCHAIN/bin/aarch64-linux-android${{ env.ANDROID_API }}-clang++" >> $GITHUB_ENV
+          echo "AR=$TOOLCHAIN/bin/llvm-ar" >> $GITHUB_ENV
+          echo "RANLIB=$TOOLCHAIN/bin/llvm-ranlib" >> $GITHUB_ENV
+          echo "STRIP=$TOOLCHAIN/bin/llvm-strip" >> $GITHUB_ENV
+
+      - name: Build LuaJIT for Android arm64
+        run: |
+          git clone --depth=1 https://github.com/LuaJIT/LuaJIT.git /tmp/luajit
+          cd /tmp/luajit
+
+          HOST_CC="gcc"
+          CROSS=${{ env.TOOLCHAIN }}/bin/aarch64-linux-android-
+
+          make -j$(nproc) \
+            HOST_CC="$HOST_CC" \
+            CROSS="${{ env.TOOLCHAIN }}/bin/aarch64-linux-android" \
+            TARGET_SYS=Linux \
+            TARGET_FLAGS="-fPIC --target=aarch64-linux-android${{ env.ANDROID_API }} --sysroot=${{ env.TOOLCHAIN }}/sysroot" \
+            CC="${{ env.CC }}" \
+            STATIC_CC="${{ env.CC }}" \
+            DYNAMIC_CC="${{ env.CC }} -fPIC" \
+            LDFLAGS="--target=aarch64-linux-android${{ env.ANDROID_API }} --sysroot=${{ env.TOOLCHAIN }}/sysroot" \
+            BUILDMODE=static
+
+          mkdir -p $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a
+          mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/luajit
+
+          cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/
+          cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/liblua.a
+          cp src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/luajit.h \
+            $GITHUB_WORKSPACE/android/app/libs/include/luajit/
+
+      - name: Build OpenAL-Soft for Android arm64
+        run: |
+          git clone --depth=1 https://github.com/kcat/openal-soft.git /tmp/openal
+          cmake -S /tmp/openal -B /tmp/openal-build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ env.ABI }} \
+            -DANDROID_PLATFORM=android-${{ env.ANDROID_API }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DALSOFT_BACKEND_OPENSL=ON \
+            -DALSOFT_BACKEND_WAVE=OFF \
+            -DALSOFT_UTILS=OFF \
+            -DALSOFT_EXAMPLES=OFF \
+            -DALSOFT_TESTS=OFF \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build /tmp/openal-build -j$(nproc)
+
+          cp /tmp/openal-build/libopenal.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/
+
+      - name: Build Minizip for Android arm64
+        run: |
+          git clone --depth=1 https://github.com/zlib-ng/minizip-ng.git /tmp/minizip
+          cmake -S /tmp/minizip -B /tmp/minizip-build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ env.ABI }} \
+            -DANDROID_PLATFORM=android-${{ env.ANDROID_API }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMZ_BUILD_TESTS=OFF \
+            -DMZ_BUILD_UNIT_TESTS=OFF \
+            -DMZ_COMPAT=ON \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build /tmp/minizip-build -j$(nproc)
+
+          cp /tmp/minizip-build/libminizip.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/ 2>/dev/null || \
+          cp /tmp/minizip-build/libminizip_compat.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
+
+          mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/minizip
+          cp /tmp/minizip/mz.h /tmp/minizip/mz_compat.h /tmp/minizip/unzip.h /tmp/minizip/zip.h \
+            $GITHUB_WORKSPACE/android/app/libs/include/minizip/ 2>/dev/null || true
 
       - name: Get vcpkg commit ID
         id: vcpkg-step
@@ -177,7 +264,7 @@ jobs:
         run: |
           export VCPKG_ROOT=${{ github.workspace }}/vcpkg
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon -Pandroid.ndkVersion=${{ env.NDK_VERSION }}
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
