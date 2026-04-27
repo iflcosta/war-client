@@ -2,9 +2,6 @@ name: Build - MacOS (SDL2)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: write
