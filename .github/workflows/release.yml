@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: brew install ccache ninja dylibbundler
+        run: brew install ccache ninja
 
       - name: Download game assets (dat/spr)
         run: |
@@ -77,42 +77,44 @@ jobs:
 
       - name: Package .app bundle
         run: |
-          mkdir -p "WorldWar.app/Contents/MacOS"
-          mkdir -p "WorldWar.app/Contents/libs"
+          APP="WorldWar.app"
+          MACOS="$APP/Contents/MacOS"
+          LIBS="$APP/Contents/libs"
+          mkdir -p "$MACOS" "$LIBS"
 
-          cp build/bin/otclient "WorldWar.app/Contents/MacOS/"
+          cp build/bin/otclient "$MACOS/"
 
-          cat > "WorldWar.app/Contents/Info.plist" <<EOF
+          # Info.plist
+          cat > "$APP/Contents/Info.plist" << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key><string>otclient</string>
-              <key>CFBundleIdentifier</key><string>com.worldwar.otclient</string>
-              <key>CFBundleName</key><string>World War</string>
-              <key>CFBundlePackageType</key><string>APPL</string>
-              <key>CFBundleVersion</key><string>${{ github.event.inputs.version }}</string>
-              <key>CFBundleShortVersionString</key><string>${{ github.event.inputs.version }}</string>
-              <key>LSMinimumSystemVersion</key><string>11.0</string>
-              <key>NSHighResolutionCapable</key><true/>
-          </dict>
-          </plist>
+          <plist version="1.0"><dict>
+            <key>CFBundleExecutable</key><string>otclient</string>
+            <key>CFBundleIdentifier</key><string>com.worldwar.otclient</string>
+            <key>CFBundleName</key><string>World War</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict></plist>
           EOF
 
-          dylibbundler -od -b \
-            -x "WorldWar.app/Contents/MacOS/otclient" \
-            -d "WorldWar.app/Contents/libs/" \
-            -p "@executable_path/../libs/"
+          # Copiar dylibs manualmente
+          BINARY="$MACOS/otclient"
+          for dylib in $(otool -L "$BINARY" | awk '/\/opt\/homebrew|\/usr\/local/{print $1}'); do
+            cp "$dylib" "$LIBS/" 2>/dev/null || true
+            install_name_tool -change "$dylib" "@executable_path/../libs/$(basename $dylib)" "$BINARY" 2>/dev/null || true
+          done
 
-          cp *.lua "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
-          cp -r data "WorldWar.app/Contents/MacOS/"
-          cp -r modules "WorldWar.app/Contents/MacOS/"
-          cp -r mods "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
-          cp config.ini "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
-          cp cacert.pem "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
+          # Copiar assets
+          cp *.lua "$MACOS/" 2>/dev/null || true
+          cp -r data "$MACOS/"
+          cp -r modules "$MACOS/"
+          cp -r mods "$MACOS/" 2>/dev/null || true
+          cp config.ini "$MACOS/" 2>/dev/null || true
+          cp cacert.pem "$MACOS/" 2>/dev/null || true
 
-          codesign --deep --force --sign - WorldWar.app
-          zip -r worldwar-client-macos.zip WorldWar.app
+          codesign --deep --force --sign - "$APP"
+          zip -r worldwar-client-macos.zip "$APP"
 
       - name: Create macOS Release
         uses: softprops/action-gh-release@v2
@@ -176,11 +178,6 @@ jobs:
           TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
           echo "NDK_PATH=$NDK_PATH" >> $GITHUB_ENV
           echo "TOOLCHAIN=$TOOLCHAIN" >> $GITHUB_ENV
-          echo "CC=$TOOLCHAIN/bin/aarch64-linux-android${{ env.ANDROID_API }}-clang" >> $GITHUB_ENV
-          echo "CXX=$TOOLCHAIN/bin/aarch64-linux-android${{ env.ANDROID_API }}-clang++" >> $GITHUB_ENV
-          echo "AR=$TOOLCHAIN/bin/llvm-ar" >> $GITHUB_ENV
-          echo "RANLIB=$TOOLCHAIN/bin/llvm-ranlib" >> $GITHUB_ENV
-          echo "STRIP=$TOOLCHAIN/bin/llvm-strip" >> $GITHUB_ENV
 
       - name: Build LuaJIT for Android arm64
         run: |
@@ -205,7 +202,6 @@ jobs:
 
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/luajit
-
           cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/
           cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/liblua.a
           cp src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/luajit.h \
@@ -225,11 +221,8 @@ jobs:
             -DALSOFT_EXAMPLES=OFF \
             -DALSOFT_TESTS=OFF \
             -DBUILD_SHARED_LIBS=OFF \
-            -DALSOFT_BUILD_IMPORT_LIB=OFF \
             -DLIBTYPE=STATIC
           cmake --build /tmp/openal-build -j$(nproc)
-
-          # pode sair como libopenal.a ou libOpenAL.a dependendo da versão
           find /tmp/openal-build -name "libopenal.a" -o -name "libOpenAL.a" | head -1 | \
             xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libopenal.a
 
@@ -246,10 +239,8 @@ jobs:
             -DMZ_COMPAT=ON \
             -DBUILD_SHARED_LIBS=OFF
           cmake --build /tmp/minizip-build -j$(nproc)
-
-          cp /tmp/minizip-build/libminizip.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/ 2>/dev/null || \
-          cp /tmp/minizip-build/libminizip_compat.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
-
+          find /tmp/minizip-build -name "libminizip*.a" | head -1 | \
+            xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/minizip
           cp /tmp/minizip/mz.h /tmp/minizip/mz_compat.h /tmp/minizip/unzip.h /tmp/minizip/zip.h \
             $GITHUB_WORKSPACE/android/app/libs/include/minizip/ 2>/dev/null || true
@@ -270,9 +261,11 @@ jobs:
         run: |
           export VCPKG_ROOT=${{ github.workspace }}/vcpkg
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon -Pandroid.ndkVersion=${{ env.NDK_VERSION }}
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.ndkVersion=${{ env.NDK_VERSION }}
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          VCPKG_DEFAULT_HOST_TRIPLET: x64-linux
 
       - name: Locate and rename APK
         run: |
