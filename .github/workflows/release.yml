@@ -190,13 +190,14 @@ jobs:
           TOOLCHAIN=${{ env.TOOLCHAIN }}
           API=${{ env.ANDROID_API }}
           TARGET_CC="$TOOLCHAIN/bin/aarch64-linux-android${API}-clang"
-          SYSROOT="$TOOLCHAIN/sysroot"
 
           make -j$(nproc) \
             HOST_CC="gcc -m64" \
-            CROSS="$TOOLCHAIN/bin/llvm-" \
+            CROSS="" \
             TARGET_SYS=Linux \
-            TARGET_FLAGS="--target=aarch64-linux-android${API} --sysroot=$SYSROOT -fPIC" \
+            TARGET_FLAGS="--target=aarch64-linux-android${API} --sysroot=$TOOLCHAIN/sysroot -fPIC" \
+            STATIC_CC="$TARGET_CC" \
+            DYNAMIC_CC="$TARGET_CC -fPIC" \
             TARGET_LD="$TARGET_CC" \
             TARGET_AR="$TOOLCHAIN/bin/llvm-ar rcus" \
             TARGET_STRIP="$TOOLCHAIN/bin/llvm-strip" \
