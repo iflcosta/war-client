@@ -116,6 +116,18 @@ jobs:
       - name: Install dependencies
         run: brew install ccache ninja
 
+      - name: Download game assets (dat/spr)
+        run: |
+          gh release download v1.0.0-assets \
+            --repo iflcosta/war-client \
+            --pattern "860.zip" \
+            --output /tmp/860.zip
+          mkdir -p data/things/860
+          unzip -o /tmp/860.zip "860/Tibia.dat" "860/Tibia.spr" "860/Tibia.otfi" -d /tmp/things_tmp
+          cp /tmp/things_tmp/860/* data/things/860/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Get vcpkg commit ID
         id: vcpkg-step
         run: |
@@ -149,10 +161,19 @@ jobs:
             -DX_VCPKG_BINARY_CACHING=OFF
           cmake --build build --target otclient
 
-      - name: Zip artifact
+      - name: Assemble client
         run: |
-          cd build/bin
-          zip -r $GITHUB_WORKSPACE/worldwar-client-macos.zip .
+          CLIENT_DIR=$GITHUB_WORKSPACE/worldwar-macos
+          mkdir -p $CLIENT_DIR
+          cp build/bin/otclient $CLIENT_DIR/
+          cp -r data $CLIENT_DIR/
+          cp -r modules $CLIENT_DIR/
+          cp -r mods $CLIENT_DIR/ 2>/dev/null || true
+          cp init.lua $CLIENT_DIR/
+          cp otclientrc.lua $CLIENT_DIR/ 2>/dev/null || true
+          cp config.ini $CLIENT_DIR/ 2>/dev/null || true
+          cp cacert.pem $CLIENT_DIR/ 2>/dev/null || true
+          zip -r $GITHUB_WORKSPACE/worldwar-client-macos.zip worldwar-macos/
 
       - name: Create macOS Release
         uses: softprops/action-gh-release@v2
@@ -192,6 +213,18 @@ jobs:
       - name: Install NDK
         run: echo "y" | sdkmanager "ndk;25.2.9519653" "cmake;3.22.1"
 
+      - name: Download game assets (dat/spr)
+        run: |
+          gh release download v1.0.0-assets \
+            --repo iflcosta/war-client \
+            --pattern "860.zip" \
+            --output /tmp/860.zip
+          mkdir -p data/things/860
+          unzip -o /tmp/860.zip "860/Tibia.dat" "860/Tibia.spr" "860/Tibia.otfi" -d /tmp/things_tmp
+          cp /tmp/things_tmp/860/* data/things/860/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Get vcpkg commit ID
         id: vcpkg-step
         run: |
@@ -219,6 +252,15 @@ jobs:
         run: |
           mkdir -p android/app/libs/lib/arm64-v8a
           find build-android -name "libotclient.so" -exec cp {} android/app/libs/lib/arm64-v8a/ \;
+
+      - name: Bundle data.zip for Android assets
+        run: |
+          ASSETS_DIR=android/app/src/main/assets
+          rm -f $ASSETS_DIR/data.zip
+          zip -r $ASSETS_DIR/data.zip \
+            data/ modules/ mods/ init.lua otclientrc.lua config.ini cacert.pem \
+            --exclude "data/things/*" 2>/dev/null || true
+          zip -r $ASSETS_DIR/data.zip data/things/860/
 
       - name: Build APK
         working-directory: android
