@@ -187,18 +187,19 @@ jobs:
           git clone --depth=1 https://github.com/LuaJIT/LuaJIT.git /tmp/luajit
           cd /tmp/luajit
 
-          HOST_CC="gcc"
-          CROSS=${{ env.TOOLCHAIN }}/bin/aarch64-linux-android-
+          TOOLCHAIN=${{ env.TOOLCHAIN }}
+          API=${{ env.ANDROID_API }}
+          TARGET_CC="$TOOLCHAIN/bin/aarch64-linux-android${API}-clang"
+          SYSROOT="$TOOLCHAIN/sysroot"
 
           make -j$(nproc) \
-            HOST_CC="$HOST_CC" \
-            CROSS="${{ env.TOOLCHAIN }}/bin/aarch64-linux-android" \
+            HOST_CC="gcc -m64" \
+            CROSS="$TOOLCHAIN/bin/llvm-" \
             TARGET_SYS=Linux \
-            TARGET_FLAGS="-fPIC --target=aarch64-linux-android${{ env.ANDROID_API }} --sysroot=${{ env.TOOLCHAIN }}/sysroot" \
-            CC="${{ env.CC }}" \
-            STATIC_CC="${{ env.CC }}" \
-            DYNAMIC_CC="${{ env.CC }} -fPIC" \
-            LDFLAGS="--target=aarch64-linux-android${{ env.ANDROID_API }} --sysroot=${{ env.TOOLCHAIN }}/sysroot" \
+            TARGET_FLAGS="--target=aarch64-linux-android${API} --sysroot=$SYSROOT -fPIC" \
+            TARGET_LD="$TARGET_CC" \
+            TARGET_AR="$TOOLCHAIN/bin/llvm-ar rcus" \
+            TARGET_STRIP="$TOOLCHAIN/bin/llvm-strip" \
             BUILDMODE=static
 
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a
