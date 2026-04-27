@@ -1,4 +1,10 @@
 HOTKEY_MANAGER_USE = nil
+
+local VOC_BASE = { [1]=1, [2]=2, [3]=3, [4]=4, [5]=1, [6]=2, [7]=3, [8]=4, [9]=9, [10]=9 }
+local function getVocKey(player)
+    local voc = player and player:getVocation() or 0
+    return "voc_" .. tostring(VOC_BASE[voc] or voc)
+end
 HOTKEY_MANAGER_USEONSELF = 1
 HOTKEY_MANAGER_USEONTARGET = 2
 HOTKEY_MANAGER_USEWITH = 3
@@ -225,8 +231,7 @@ function load(forceDefaults)
         end
     end
     if perCharacter and not table.empty(hotkeys) then
-        local player = g_game.getLocalPlayer()
-        local key = "voc_" .. tostring(player:getVocation())
+        local key = getVocKey(g_game.getLocalPlayer())
         hotkeys = hotkeys[key]
     end
 
@@ -282,8 +287,7 @@ function save()
     end
 
     if perCharacter then
-        local player = g_game.getLocalPlayer()
-        local key = "voc_" .. tostring(player:getVocation())
+        local key = getVocKey(g_game.getLocalPlayer())
         if not hotkeys[key] then
             hotkeys[key] = {}
         end
