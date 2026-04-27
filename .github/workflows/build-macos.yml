@@ -51,6 +51,7 @@ jobs:
             -DCMAKE_MAKE_PROGRAM=$(which ninja) \
             -DTOGGLE_BIN_FOLDER=ON \
             -DOPTIONS_ENABLE_IPO=OFF \
+            -DOTCLIENT_BUILD_TESTS=OFF \
             -DX_VCPKG_BINARY_CACHING=OFF
 
           cmake --build build --target otclient
