@@ -226,7 +226,7 @@ function load(forceDefaults)
     end
     if perCharacter and not table.empty(hotkeys) then
         local player = g_game.getLocalPlayer()
-        local key = g_game.getCharacterName()
+        local key = "voc_" .. tostring(player:getVocation())
         hotkeys = hotkeys[key]
     end
 
@@ -283,11 +283,11 @@ function save()
 
     if perCharacter then
         local player = g_game.getLocalPlayer()
-        local char = g_game.getCharacterName()
-        if not hotkeys[char] then
-            hotkeys[char] = {}
+        local key = "voc_" .. tostring(player:getVocation())
+        if not hotkeys[key] then
+            hotkeys[key] = {}
         end
-        hotkeys = hotkeys[char]
+        hotkeys = hotkeys[key]
     end
 
     table.clear(hotkeys)
