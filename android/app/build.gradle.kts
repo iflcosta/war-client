@@ -34,7 +34,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("../../CMakeLists.txt")
-            version = "4.0.2"
+            version = "3.22.1"
         }
     }
 
@@ -63,7 +63,7 @@ android {
         prefab = true
     }
 
-    ndkVersion = "29.0.13599879 rc2"
+    ndkVersion = "27.2.12479018"
 }
 
 dependencies {
