@@ -206,6 +206,7 @@ jobs:
           cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/liblua.a
           cp src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/luajit.h \
             $GITHUB_WORKSPACE/android/app/libs/include/luajit/
+          printf 'extern "C" {\n#include "lua.h"\n#include "lualib.h"\n#include "lauxlib.h"\n}\n' > $GITHUB_WORKSPACE/android/app/libs/include/luajit/lua.hpp
 
       - name: Build OpenAL-Soft for Android arm64
         run: |
