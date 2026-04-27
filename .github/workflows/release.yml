@@ -1,4 +1,4 @@
-name: Release - Windows, macOS, Android
+name: Release - macOS, Android
 
 on:
   workflow_dispatch:
@@ -15,94 +15,6 @@ env:
   VCPKG_BINARY_SOURCES: 'clear'
 
 jobs:
-  build-windows:
-    name: Build Windows
-    runs-on: windows-2022
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get vcpkg commit ID
-        id: vcpkg-step
-        shell: pwsh
-        run: |
-          $json = Get-Content vcpkg.json -Raw | ConvertFrom-Json
-          $commit = $json.'builtin-baseline'
-          echo "vcpkgGitCommitId=$commit" >> $env:GITHUB_OUTPUT
-
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ github.workspace }}/vcpkg/installed
-            ${{ github.workspace }}/vcpkg/buildtrees
-            ${{ github.workspace }}/vcpkg/downloads
-          key: vcpkg-windows-${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
-          restore-keys: vcpkg-windows-
-
-      - name: CCache (sccache)
-        uses: hendrikmuhs/ccache-action@main
-        with:
-          max-size: "1G"
-          variant: "sccache"
-          key: ccache-windows-release
-
-      - name: Remove pre-installed MySQL
-        run: Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "C:/mysql*"
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@a400452f634fe49e9f18d388aeb1809dcc642136
-        with:
-          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
-
-      - name: Get CMake and Ninja
-        uses: lukka/get-cmake@v3.31.6
-
-      - name: Configure and Build
-        uses: lukka/run-cmake@main
-        with:
-          configurePreset: windows-release
-          buildPreset: windows-release
-
-      - name: Collect artifacts
-        shell: pwsh
-        run: |
-          $artifactDir = "$env:GITHUB_WORKSPACE\artifacts-windows"
-          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
-          $exe = Get-ChildItem -Recurse -Path $env:GITHUB_WORKSPACE -Filter "otclient*.exe" | Select-Object -First 1
-          if (-not $exe) { Write-Error "otclient*.exe not found!"; exit 1 }
-          Copy-Item $exe.FullName -Destination $artifactDir
-          Get-ChildItem -Path $exe.Directory.FullName -Filter "*.dll" | ForEach-Object {
-            Copy-Item $_.FullName -Destination $artifactDir
-          }
-          $dataDir = Join-Path $exe.Directory.FullName "data"
-          if (Test-Path $dataDir) { Copy-Item $dataDir -Destination $artifactDir -Recurse }
-
-      - name: Zip artifact
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "$env:GITHUB_WORKSPACE\artifacts-windows\*" `
-            -DestinationPath "$env:GITHUB_WORKSPACE\worldwar-client-windows.zip"
-
-      - name: Create Windows Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.version }}-windows
-          name: "World War Client ${{ github.event.inputs.version }} - Windows"
-          body: |
-            ## World War Client ${{ github.event.inputs.version }} — Windows
-
-            Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
-
-            ### Como usar
-            Extraia o zip e execute `otclient*.exe`. O servidor já vem configurado.
-          draft: false
-          prerelease: false
-          files: worldwar-client-windows.zip
-
   build-macos:
     name: Build macOS
     runs-on: macos-13
