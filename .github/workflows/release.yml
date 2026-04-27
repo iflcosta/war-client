@@ -16,8 +16,8 @@ env:
 
 jobs:
   build-macos:
-    name: Build macOS
-    runs-on: macos-13
+    name: Build macOS (M1)
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: brew install ccache ninja
+        run: brew install ccache ninja dylibbundler
 
       - name: Download game assets (dat/spr)
         run: |
@@ -50,8 +50,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/vcpkg
-          key: vcpkg-macos-${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
-          restore-keys: vcpkg-macos-
+          key: vcpkg-macos-m1-${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+          restore-keys: vcpkg-macos-m1-
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -63,29 +63,63 @@ jobs:
 
       - name: Configure and Build
         run: |
-          export PATH="/usr/local/bin:$PATH"
           cmake -G Ninja -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_TARGET_TRIPLET=arm64-osx \
             -DCMAKE_MAKE_PROGRAM=$(which ninja) \
             -DTOGGLE_BIN_FOLDER=ON \
             -DOPTIONS_ENABLE_IPO=OFF \
+            -DOPTIONS_ENABLE_CCACHE=ON \
             -DX_VCPKG_BINARY_CACHING=OFF
           cmake --build build --target otclient
 
-      - name: Assemble client
+      - name: Package .app bundle
         run: |
-          CLIENT_DIR=$GITHUB_WORKSPACE/worldwar-macos
-          mkdir -p $CLIENT_DIR
-          cp build/bin/otclient $CLIENT_DIR/
-          cp -r data $CLIENT_DIR/
-          cp -r modules $CLIENT_DIR/
-          cp -r mods $CLIENT_DIR/ 2>/dev/null || true
-          cp init.lua $CLIENT_DIR/
-          cp otclientrc.lua $CLIENT_DIR/ 2>/dev/null || true
-          cp config.ini $CLIENT_DIR/ 2>/dev/null || true
-          cp cacert.pem $CLIENT_DIR/ 2>/dev/null || true
-          zip -r $GITHUB_WORKSPACE/worldwar-client-macos.zip worldwar-macos/
+          mkdir -p "WorldWar.app/Contents/MacOS"
+          mkdir -p "WorldWar.app/Contents/Resources"
+          mkdir -p "WorldWar.app/Contents/libs"
+
+          cp build/bin/otclient "WorldWar.app/Contents/MacOS/"
+
+          cat <<EOF > "WorldWar.app/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>otclient</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.worldwar.otclient</string>
+              <key>CFBundleName</key>
+              <string>World War</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleVersion</key>
+              <string>${{ github.event.inputs.version }}</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${{ github.event.inputs.version }}</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+          dylibbundler -od -b \
+            -x "WorldWar.app/Contents/MacOS/otclient" \
+            -d "WorldWar.app/Contents/libs/" \
+            -p "@executable_path/../libs/"
+
+          cp *.lua "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
+          cp -r data "WorldWar.app/Contents/MacOS/"
+          cp -r modules "WorldWar.app/Contents/MacOS/"
+          cp -r mods "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
+          cp config.ini "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
+          cp cacert.pem "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
+
+          zip -r worldwar-client-macos.zip WorldWar.app
 
       - name: Create macOS Release
         uses: softprops/action-gh-release@v2
@@ -93,12 +127,12 @@ jobs:
           tag_name: ${{ github.event.inputs.version }}-macos
           name: "World War Client ${{ github.event.inputs.version }} - macOS"
           body: |
-            ## World War Client ${{ github.event.inputs.version }} — macOS
+            ## World War Client ${{ github.event.inputs.version }} — macOS (Apple Silicon M1/M2/M3)
 
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
             ### Como usar
-            Extraia o zip e execute o binário `otclient`. O servidor já vem configurado.
+            Extraia o zip, clique com botão direito em `WorldWar.app` → **Abrir**. O servidor já vem configurado.
           draft: false
           prerelease: false
           files: worldwar-client-macos.zip
