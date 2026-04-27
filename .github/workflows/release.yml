@@ -119,6 +119,9 @@ jobs:
           cp config.ini "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
           cp cacert.pem "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
 
+          # Assinatura ad-hoc para passar pelo Gatekeeper
+          codesign --deep --force --sign - WorldWar.app
+
           zip -r worldwar-client-macos.zip WorldWar.app
 
       - name: Create macOS Release
@@ -157,7 +160,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install NDK
-        run: echo "y" | sdkmanager "ndk;25.2.9519653" "cmake;3.22.1"
+        run: echo "y" | sdkmanager "ndk;27.3.13750724" "cmake;3.22.1" "extras;google;gameactivity"
 
       - name: Download game assets (dat/spr)
         run: |
@@ -184,14 +187,15 @@ jobs:
 
       - name: Build native libs (arm64-v8a)
         run: |
-          NDK_PATH=$ANDROID_SDK_ROOT/ndk/25.2.9519653
+          NDK_PATH=$ANDROID_SDK_ROOT/ndk/27.3.13750724
           cmake -S . -B build-android \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
             -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-24 \
             -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_TARGET_ANDROID=ON
+            -DVCPKG_TARGET_ANDROID=ON \
+            -Dgame-activity_DIR=$ANDROID_SDK_ROOT/extras/google/gameactivity/prefab/lib/cmake/game-activity
           cmake --build build-android --target otclient -j$(nproc)
 
       - name: Copy .so to Android libs folder
