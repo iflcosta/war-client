@@ -246,6 +246,15 @@ jobs:
           echo 'aW1wb3J0IHJlCmNvbnRlbnQgPSBvcGVuKCdhcHAvYnVpbGQuZ3JhZGxlLmt0cycpLnJlYWQoKQpjb250ZW50ID0gcmUuc3ViKHInYWJpRmlsdGVycyBcKz0gbGlzdE9mXChbXildK1wpJywgJ2FiaUZpbHRlcnMgKz0gbGlzdE9mKCJhcm02NC12OGEiKScsIGNvbnRlbnQpCm9sZCA9ICciLURWQ1BLR19UQVJHRVRfQU5EUk9JRD1PTiIsXG4gICAgICAgICAgICAgICAgICAgICItREFORFJPSURfU1RMPWMrK19zaGFyZWQiJwpuZXcgPSAnIi1EVkNQS0dfVEFSR0VUX0FORFJPSUQ9T04iLFxuICAgICAgICAgICAgICAgICAgICAiLURBTkRST0lEX1NUTD1jKytfc2hhcmVkIixcbiAgICAgICAgICAgICAgICAgICAgIi1EQ01BS0VfQ1hYX0ZMQUdTPS1JJHtwcm9qZWN0LnJvb3REaXJ9L2FwcC9saWJzL2luY2x1ZGUiLFxuICAgICAgICAgICAgICAgICAgICAiLURMVUFKSVRfSU5DTFVERV9ESVI9JHtwcm9qZWN0LnJvb3REaXJ9L2FwcC9saWJzL2luY2x1ZGUvbHVhaml0IixcbiAgICAgICAgICAgICAgICAgICAgIi1ETFVBSklUX0xJQlJBUlk9JHtwcm9qZWN0LnJvb3REaXJ9L2FwcC9saWJzL2xpYi9hcm02NC12OGEvbGlibHVhaml0LmEiJwpjb250ZW50ID0gY29udGVudC5yZXBsYWNlKG9sZCwgbmV3KQpvcGVuKCdhcHAvYnVpbGQuZ3JhZGxlLmt0cycsICd3Jykud3JpdGUoY29udGVudCkKcHJpbnQoJ1BhdGNoZWQgT0snKQpwcmludChvcGVuKCdhcHAvYnVpbGQuZ3JhZGxlLmt0cycpLnJlYWQoKSkK' | base64 -d > /tmp/patch_gradle.py
           python3 /tmp/patch_gradle.py
 
+      - name: Setup vcpkg
+        id: vcpkg-step
+        run: |
+          vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
+          git clone https://github.com/microsoft/vcpkg.git /tmp/vcpkg
+          git -C /tmp/vcpkg checkout "$vcpkgCommitId"
+          /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          echo "VCPKG_ROOT=/tmp/vcpkg" >> $GITHUB_ENV
+
       - name: Bundle data.zip for Android assets
         run: |
           ASSETS_DIR=android/app/src/main/assets
@@ -258,6 +267,9 @@ jobs:
 
       - name: Build APK (debug — instalável sem keystore)
         working-directory: android
+        env:
+          ANDROID_NDK_HOME: ${{ env.NDK_PATH }}
+          VCPKG_ROOT: /tmp/vcpkg
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
