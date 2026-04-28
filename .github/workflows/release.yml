@@ -113,14 +113,6 @@ jobs:
           cp config.ini "$MACOS/" 2>/dev/null || true
           cp cacert.pem "$MACOS/" 2>/dev/null || true
 
-          # Remove arquivos não-binários que impedem codesign --deep
-          find "$APP" \( -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" \) -exec rm -f {} + 2>/dev/null || true
-
-          # Assina binário e dylibs primeiro, depois o bundle
-          codesign --force --sign - "$MACOS/otclient"
-          find "$LIBS" -name "*.dylib" -exec codesign --force --sign - {} \; 2>/dev/null || true
-          codesign --force --sign - "$APP"
-
           zip -r worldwar-client-macos.zip "$APP"
 
       - name: Create macOS Release
@@ -252,7 +244,7 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/minizip
           cp /tmp/minizip/mz.h /tmp/minizip/mz_compat.h /tmp/minizip/unzip.h /tmp/minizip/zip.h \
             $GITHUB_WORKSPACE/android/app/libs/include/minizip/ 2>/dev/null || true
-          cp /tmp/minizip/compat/ioapi.h \
+          cp /tmp/minizip/compat/ioapi.h /tmp/minizip/compat/ioapi_mem.h \
             $GITHUB_WORKSPACE/android/app/libs/include/minizip/ 2>/dev/null || true
 
       - name: Get vcpkg commit ID
