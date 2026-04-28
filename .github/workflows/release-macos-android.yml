@@ -120,7 +120,21 @@ jobs:
           cp config.ini "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
           cp cacert.pem "WorldWar.app/Contents/MacOS/" 2>/dev/null || true
 
-          codesign --deep --force --sign - WorldWar.app
+          # Entitlements: permite JIT (LuaJIT) no Apple Silicon
+          cat > /tmp/entitlements.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.cs.disable-library-validation</key><true/>
+</dict></plist>
+EOF
+          # Remove arquivos não-binários que impedem codesign
+          find WorldWar.app -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" | xargs rm -f 2>/dev/null || true
+          # Assina binário com entitlements JIT, dylibs separadamente
+          codesign --force --sign - --entitlements /tmp/entitlements.plist "WorldWar.app/Contents/MacOS/otclient"
+          find WorldWar.app/Contents/libs -name "*.dylib" -exec codesign --force --sign - {} \; 2>/dev/null || true
 
           zip -r worldwar-client-macos.zip WorldWar.app
 
