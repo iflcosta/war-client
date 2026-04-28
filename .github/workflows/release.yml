@@ -250,11 +250,41 @@ jobs:
             xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/minizip
           find /tmp/minizip -maxdepth 2 -name "*.h" -exec cp {} $GITHUB_WORKSPACE/android/app/libs/include/minizip/ \; 2>/dev/null || true
-          # ioapi_mem.h não existe no minizip-ng, copiar do zlib contrib original
-          curl -fsSL "https://raw.githubusercontent.com/madler/zlib/master/contrib/minizip/ioapi_mem.h" \
-            -o $GITHUB_WORKSPACE/android/app/libs/include/minizip/ioapi_mem.h
-          curl -fsSL "https://raw.githubusercontent.com/madler/zlib/master/contrib/minizip/ioapi.h" \
-            -o $GITHUB_WORKSPACE/android/app/libs/include/minizip/ioapi.h 2>/dev/null || true
+          # ioapi_mem.h não está no minizip-ng — criar o header manualmente
+          cat > $GITHUB_WORKSPACE/android/app/libs/include/minizip/ioapi_mem.h << 'IOAPI_EOF'
+#ifndef _IOAPI_MEM_H
+#define _IOAPI_MEM_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "ioapi.h"
+typedef struct ourmemory_s {
+    char *base;
+    uLong size;
+    uLong limit;
+    uLong cur_offset;
+    int grow;
+} ourmemory_t;
+voidpf ZCALLBACK fopen_mem_func(voidpf opaque, const char* filename, int mode);
+uLong  ZCALLBACK fread_mem_func(voidpf opaque, voidpf stream, void* buf, uLong size);
+uLong  ZCALLBACK fwrite_mem_func(voidpf opaque, voidpf stream, const void* buf, uLong size);
+long   ZCALLBACK ftell_mem_func(voidpf opaque, voidpf stream);
+long   ZCALLBACK fseek_mem_func(voidpf opaque, voidpf stream, uLong offset, int origin);
+int    ZCALLBACK fclose_mem_func(voidpf opaque, voidpf stream);
+int    ZCALLBACK ferror_mem_func(voidpf opaque, voidpf stream);
+void fill_memory_filefunc(zlib_filefunc_def* pzlib_filefunc_def, ourmemory_t* ourmem);
+#ifndef IOAPI_MEM_IMPLEMENTATION
+voidpf ZCALLBACK fopen_mem_func(voidpf opaque,const char*filename,int mode){return opaque;}
+uLong ZCALLBACK fread_mem_func(voidpf opaque,voidpf stream,void*buf,uLong size){ourmemory_t*mem=(ourmemory_t*)stream;if(mem->cur_offset+size>mem->size)size=mem->size-mem->cur_offset;memcpy(buf,mem->base+mem->cur_offset,size);mem->cur_offset+=size;return size;}
+uLong ZCALLBACK fwrite_mem_func(voidpf opaque,voidpf stream,const void*buf,uLong size){ourmemory_t*mem=(ourmemory_t*)stream;if(mem->cur_offset+size>mem->limit){if(!mem->grow)return 0;mem->limit=mem->cur_offset+size;mem->base=(char*)realloc(mem->base,mem->limit);}if(mem->cur_offset+size>mem->size)mem->size=mem->cur_offset+size;memcpy(mem->base+mem->cur_offset,buf,size);mem->cur_offset+=size;return size;}
+long ZCALLBACK ftell_mem_func(voidpf opaque,voidpf stream){ourmemory_t*mem=(ourmemory_t*)stream;return mem->cur_offset;}
+long ZCALLBACK fseek_mem_func(voidpf opaque,voidpf stream,uLong offset,int origin){ourmemory_t*mem=(ourmemory_t*)stream;uLong new_pos;switch(origin){case ZLIB_FILEFUNC_SEEK_CUR:new_pos=mem->cur_offset+offset;break;case ZLIB_FILEFUNC_SEEK_END:new_pos=mem->size+offset;break;case ZLIB_FILEFUNC_SEEK_SET:new_pos=offset;break;default:return -1;}if(new_pos>mem->size)return -1;mem->cur_offset=new_pos;return 0;}
+int ZCALLBACK fclose_mem_func(voidpf opaque,voidpf stream){return 0;}
+int ZCALLBACK ferror_mem_func(voidpf opaque,voidpf stream){return 0;}
+void fill_memory_filefunc(zlib_filefunc_def*pzlib_filefunc_def,ourmemory_t*ourmem){pzlib_filefunc_def->zopen_file=fopen_mem_func;pzlib_filefunc_def->zread_file=fread_mem_func;pzlib_filefunc_def->zwrite_file=fwrite_mem_func;pzlib_filefunc_def->ztell_file=ftell_mem_func;pzlib_filefunc_def->zseek_file=fseek_mem_func;pzlib_filefunc_def->zclose_file=fclose_mem_func;pzlib_filefunc_def->zerror_file=ferror_mem_func;pzlib_filefunc_def->opaque=ourmem;}
+#endif
+#endif
+IOAPI_EOF
 
       - name: Setup vcpkg
         run: |
