@@ -96,8 +96,9 @@ jobs:
           cp -r data "$MACOS/"
           cp -r modules "$MACOS/"
           cp -r mods "$MACOS/" 2>/dev/null || true
-          cp config.ini "$MACOS/" 2>/dev/null || true
           cp cacert.pem "$MACOS/" 2>/dev/null || true
+          # config.ini vai na raiz do .app (fora de MacOS/) para não conflitar com codesign
+          cp config.ini "$APP/" 2>/dev/null || true
 
           find "$APP" \( -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" \) -exec rm -f {} + 2>/dev/null || true
 
