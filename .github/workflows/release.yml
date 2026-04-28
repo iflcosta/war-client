@@ -247,26 +247,24 @@ jobs:
           cp /tmp/minizip/compat/ioapi.h /tmp/minizip/compat/ioapi_mem.h \
             $GITHUB_WORKSPACE/android/app/libs/include/minizip/ 2>/dev/null || true
 
-      - name: Get vcpkg commit ID
-        id: vcpkg-step
+      - name: Setup vcpkg
         run: |
           vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
-          echo "vcpkgGitCommitId=$vcpkgCommitId" >> $GITHUB_OUTPUT
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          git -C vcpkg checkout "$vcpkgCommitId"
+          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          echo "VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg" >> $GITHUB_ENV
 
       - name: Build APK via Gradle
         working-directory: android
         run: |
-          export VCPKG_ROOT=${{ github.workspace }}/vcpkg
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon \
             -Pandroid.ndkVersion=${{ env.NDK_VERSION }}
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.NDK_PATH }}
+          VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
           VCPKG_DEFAULT_HOST_TRIPLET: x64-linux
 
       - name: Locate and rename APK
