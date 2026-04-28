@@ -82,14 +82,14 @@ jobs:
           LIBS="$APP/Contents/libs"
           mkdir -p "$MACOS" "$LIBS" "$APP/Contents"
 
-          # Cria entitlements JIT para LuaJIT no Apple Silicon
+          # Entitlements JIT — necessário para LuaJIT rodar no Apple Silicon
           printf '%s' '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>com.apple.security.cs.allow-jit</key><true/><key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/><key>com.apple.security.cs.disable-library-validation</key><true/></dict></plist>' > /tmp/entitlements.plist
 
           # Assina o binário ANTES de montar o bundle (evita "unsealed contents" error)
           codesign --force --sign - --entitlements /tmp/entitlements.plist build/bin/otclient
           cp build/bin/otclient "$MACOS/"
 
-          # Info.plist com versão do release
+          # Info.plist
           VER="${{ github.event.inputs.version }}"
           printf '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleExecutable</key><string>otclient</string><key>CFBundleIdentifier</key><string>com.worldwar.otclient</string><key>CFBundleName</key><string>World War</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleVersion</key><string>%s</string><key>CFBundleShortVersionString</key><string>%s</string><key>LSMinimumSystemVersion</key><string>11.0</string><key>NSHighResolutionCapable</key><true/></dict></plist>' "$VER" "$VER" > "$APP/Contents/Info.plist"
 
@@ -102,7 +102,7 @@ jobs:
           # Assina dylibs
           find "$LIBS" -name "*.dylib" -exec codesign --force --sign - {} \; 2>/dev/null || true
 
-          # Copia assets do cliente
+          # Copia assets
           cp *.lua "$MACOS/" 2>/dev/null || true
           cp -r data "$MACOS/"
           cp -r modules "$MACOS/"
@@ -123,7 +123,12 @@ jobs:
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
             ### Como usar
-            Extraia o zip, clique com botão direito em `WorldWar.app` → **Abrir**. O servidor já vem configurado.
+            1. Extraia o zip
+            2. **Clique direito** em `WorldWar.app` → **Abrir** → confirme no popup
+            3. Na próxima vez abre normalmente com duplo clique
+
+            > Se aparecer "aplicativo danificado", abra o Terminal e execute:
+            > `xattr -dr com.apple.quarantine WorldWar.app`
           draft: false
           prerelease: false
           files: worldwar-client-macos.zip
@@ -131,6 +136,10 @@ jobs:
   build-android:
     name: Build Android
     runs-on: ubuntu-22.04
+
+    env:
+      NDK_VERSION: "27.2.12479018"
+      ANDROID_API: "24"
 
     steps:
       - name: Checkout
@@ -149,34 +158,9 @@ jobs:
 
       - name: Install NDK and CMake
         run: |
-          echo "y" | sdkmanager "cmake;3.22.1"
-          NDK_VER=$(ls $ANDROID_SDK_ROOT/ndk/ | sort -V | tail -1)
-          echo "NDK_VERSION=$NDK_VER" >> $GITHUB_ENV
-          echo "NDK_PATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER" >> $GITHUB_ENV
-
-      - name: Install game-activity cmake files from Maven
-        run: |
-          GA_VERSION="2.0.2"
-          GA_DIR="$ANDROID_SDK_ROOT/games/game-activity/$GA_VERSION"
-          mkdir -p "$GA_DIR"
-          curl -fsSL "https://maven.google.com/androidx/games/games-activity/$GA_VERSION/games-activity-$GA_VERSION.aar" \
-            -o /tmp/game-activity.aar
-          unzip -o /tmp/game-activity.aar "prefab/*" -d /tmp/ga-prefab
-          mkdir -p "$GA_DIR/cmake"
-          # Copiar headers e cmake config do prefab
-          cp -r /tmp/ga-prefab/prefab "$GA_DIR/"
-          # Gerar um cmake config simples que aponta para os headers/libs do prefab
-          MODULES_DIR="/tmp/ga-prefab/prefab/modules/game-activity"
-          LIB_DIR="$MODULES_DIR/libs/android.arm64-v8a"
-          HDR_DIR="$MODULES_DIR/include"
-          cat > "$GA_DIR/cmake/game-activity-config.cmake" << EOF
-          set(game-activity_FOUND TRUE)
-          add_library(game-activity::game-activity STATIC IMPORTED)
-          set_target_properties(game-activity::game-activity PROPERTIES
-            IMPORTED_LOCATION "$LIB_DIR/libgame-activity.a"
-            INTERFACE_INCLUDE_DIRECTORIES "$HDR_DIR"
-          )
-          EOF
+          echo "y" | sdkmanager "ndk;${{ env.NDK_VERSION }}" "cmake;3.22.1"
+          echo "NDK_PATH=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
+          echo "TOOLCHAIN=$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VERSION }}/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
 
       - name: Download game assets (dat/spr)
         run: |
@@ -190,54 +174,98 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get vcpkg commit ID
-        id: vcpkg-step
+      - name: Build LuaJIT for Android arm64
         run: |
-          vcpkgCommitId=$(grep '.builtin-baseline' vcpkg.json | awk -F: '{print $2}' | tr -d '," ')
-          echo "vcpkgGitCommitId=$vcpkgCommitId" >> $GITHUB_OUTPUT
+          git clone --depth=1 https://github.com/LuaJIT/LuaJIT.git /tmp/luajit
+          cd /tmp/luajit
+          API=${{ env.ANDROID_API }}
+          TARGET_CC="${{ env.TOOLCHAIN }}/bin/aarch64-linux-android${API}-clang"
+          make -j$(nproc) \
+            HOST_CC="gcc -m64" \
+            CROSS="" \
+            TARGET_SYS=Linux \
+            TARGET_FLAGS="--target=aarch64-linux-android${API} --sysroot=${{ env.TOOLCHAIN }}/sysroot -fPIC" \
+            STATIC_CC="$TARGET_CC" \
+            DYNAMIC_CC="$TARGET_CC -fPIC" \
+            TARGET_LD="$TARGET_CC" \
+            TARGET_AR="${{ env.TOOLCHAIN }}/bin/llvm-ar rcus" \
+            TARGET_STRIP="${{ env.TOOLCHAIN }}/bin/llvm-strip" \
+            BUILDMODE=static
+          LIBS_DIR=$GITHUB_WORKSPACE/android/app/libs
+          mkdir -p "$LIBS_DIR/lib/arm64-v8a" "$LIBS_DIR/include/luajit"
+          cp src/libluajit.a "$LIBS_DIR/lib/arm64-v8a/libluajit.a"
+          cp src/libluajit.a "$LIBS_DIR/lib/arm64-v8a/liblua.a"
+          cp src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/luajit.h "$LIBS_DIR/include/luajit/"
+          printf 'extern "C" {\n#include "lua.h"\n#include "lualib.h"\n#include "lauxlib.h"\n}\n' \
+            > "$LIBS_DIR/include/luajit/lua.hpp"
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
-
-      - name: Build native libs (arm64-v8a)
+      - name: Build OpenAL-Soft for Android arm64
         run: |
-          GAME_ACTIVITY_DIR=$ANDROID_SDK_ROOT/games/game-activity/2.0.2
-          cmake -S . -B build-android \
-            -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$NDK_PATH/build/cmake/android.toolchain.cmake \
+          git clone --depth=1 https://github.com/kcat/openal-soft.git /tmp/openal
+          cmake -S /tmp/openal -B /tmp/openal-build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=android-24 \
+            -DANDROID_PLATFORM=android-${{ env.ANDROID_API }} \
             -DCMAKE_BUILD_TYPE=Release \
-            -DVCPKG_TARGET_ANDROID=ON \
-            -DOTCLIENT_BUILD_TESTS=OFF \
-            -Dgame-activity_DIR=$GAME_ACTIVITY_DIR/cmake
-          cmake --build build-android --target otclient -j$(nproc)
+            -DALSOFT_BACKEND_OPENSL=ON \
+            -DALSOFT_BACKEND_WAVE=OFF \
+            -DALSOFT_UTILS=OFF \
+            -DALSOFT_EXAMPLES=OFF \
+            -DALSOFT_TESTS=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DLIBTYPE=STATIC
+          cmake --build /tmp/openal-build -j$(nproc)
+          find /tmp/openal-build -name "libopenal.a" -o -name "libOpenAL.a" | head -1 | \
+            xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libopenal.a
 
-      - name: Copy .so to Android libs folder
+      - name: Build Minizip for Android arm64
         run: |
-          mkdir -p android/app/libs/lib/arm64-v8a
-          find build-android -name "libotclient.so" -exec cp {} android/app/libs/lib/arm64-v8a/ \;
+          git clone --depth=1 https://github.com/zlib-ng/minizip-ng.git /tmp/minizip
+          cmake -S /tmp/minizip -B /tmp/minizip-build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.NDK_PATH }}/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-${{ env.ANDROID_API }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMZ_BUILD_TESTS=OFF \
+            -DMZ_BUILD_UNIT_TESTS=OFF \
+            -DMZ_COMPAT=ON \
+            -DBUILD_SHARED_LIBS=OFF
+          cmake --build /tmp/minizip-build -j$(nproc)
+          find /tmp/minizip-build -name "libminizip*.a" | head -1 | \
+            xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
+          MZIP_INC=$GITHUB_WORKSPACE/android/app/libs/include/minizip
+          mkdir -p "$MZIP_INC"
+          find /tmp/minizip -maxdepth 2 -name "*.h" -exec cp {} "$MZIP_INC/" \; 2>/dev/null || true
+          # ioapi_mem.h não existe no minizip-ng — criar manualmente
+          echo 'I2lmbmRlZiBfSU9BUElfTUVNX0gKI2RlZmluZSBfSU9BUElfTUVNX0gKI2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzdGRsaWIuaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSAiaW9hcGkuaCIKdHlwZWRlZiBzdHJ1Y3Qgb3VybWVtb3J5X3MgewogICAgY2hhciAqYmFzZTsgdUxvbmcgc2l6ZTsgdUxvbmcgbGltaXQ7IHVMb25nIGN1cl9vZmZzZXQ7IGludCBncm93Owp9IG91cm1lbW9yeV90Owp2b2lkcGYgWkNBTExCQUNLIGZvcGVuX21lbV9mdW5jKHZvaWRwZiBvcGFxdWUsIGNvbnN0IGNoYXIqIGZpbGVuYW1lLCBpbnQgbW9kZSk7CnVMb25nICBaQ0FMTEJBQ0sgZnJlYWRfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSwgdm9pZCogYnVmLCB1TG9uZyBzaXplKTsKdUxvbmcgIFpDQUxMQkFDSyBmd3JpdGVfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSwgY29uc3Qgdm9pZCogYnVmLCB1TG9uZyBzaXplKTsKbG9uZyAgIFpDQUxMQkFDSyBmdGVsbF9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtKTsKbG9uZyAgIFpDQUxMQkFDSyBmc2Vla19tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtLCB1TG9uZyBvZmZzZXQsIGludCBvcmlnaW4pOwppbnQgICAgWkNBTExCQUNLIGZjbG9zZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtKTsKaW50ICAgIFpDQUxMQkFDSyBmZXJyb3JfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSk7CnZvaWQgZmlsbF9tZW1vcnlfZmlsZWZ1bmMoemxpYl9maWxlZnVuY19kZWYqIHB6bGliX2ZpbGVmdW5jX2RlZiwgb3VybWVtb3J5X3QqIG91cm1lbSk7CiNpZm5kZWYgSU9BUElfTUVNX0lNUExFTUVOVEFUSU9OCnZvaWRwZiBaQ0FMTEJBQ0sgZm9wZW5fbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSxjb25zdCBjaGFyKmZpbGVuYW1lLGludCBtb2RlKXtyZXR1cm4gb3BhcXVlO30KdUxvbmcgWkNBTExCQUNLIGZyZWFkX21lbV9mdW5jKHZvaWRwZiBvcGFxdWUsdm9pZHBmIHN0cmVhbSx2b2lkKmJ1Zix1TG9uZyBzaXplKXtvdXJtZW1vcnlfdCptZW09KG91cm1lbW9yeV90KilzdHJlYW07aWYobWVtLT5jdXJfb2Zmc2V0K3NpemU+bWVtLT5zaXplKXNpemU9bWVtLT5zaXplLW1lbS0+Y3VyX29mZnNldDttZW1jcHkoYnVmLG1lbS0+YmFzZSttZW0tPmN1cl9vZmZzZXQsc2l6ZSk7bWVtLT5jdXJfb2Zmc2V0Kz1zaXplO3JldHVybiBzaXplO30KdUxvbmcgWkNBTExCQUNLIGZ3cml0ZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0sY29uc3Qgdm9pZCpidWYsdUxvbmcgc2l6ZSl7b3VybWVtb3J5X3QqbWVtPShvdXJtZW1vcnlfdCopc3RyZWFtO2lmKG1lbS0+Y3VyX29mZnNldCtzaXplPm1lbS0+bGltaXQpe2lmKCFtZW0tPmdyb3cpcmV0dXJuIDA7bWVtLT5saW1pdD1tZW0tPmN1cl9vZmZzZXQrc2l6ZTttZW0tPmJhc2U9KGNoYXIqKXJlYWxsb2MobWVtLT5iYXNlLG1lbS0+bGltaXQpO31pZihtZW0tPmN1cl9vZmZzZXQrc2l6ZT5tZW0tPnNpemUpbWVtLT5zaXplPW1lbS0+Y3VyX29mZnNldCtzaXplO21lbWNweShtZW0tPmJhc2UrbWVtLT5jdXJfb2Zmc2V0LGJ1ZixzaXplKTttZW0tPmN1cl9vZmZzZXQrPXNpemU7cmV0dXJuIHNpemU7fQpsb25nIFpDQUxMQkFDSyBmdGVsbF9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0pe291cm1lbW9yeV90Km1lbT0ob3VybWVtb3J5X3QqKXN0cmVhbTtyZXR1cm4gbWVtLT5jdXJfb2Zmc2V0O30KbG9uZyBaQ0FMTEJBQ0sgZnNlZWtfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSx2b2lkcGYgc3RyZWFtLHVMb25nIG9mZnNldCxpbnQgb3JpZ2luKXtvdXJtZW1vcnlfdCptZW09KG91cm1lbW9yeV90KilzdHJlYW07dUxvbmcgbmV3X3Bvcztzd2l0Y2gob3JpZ2luKXtjYXNlIFpMSUJfRklMRUZVTkNfU0VFS19DVVI6bmV3X3Bvcz1tZW0tPmN1cl9vZmZzZXQrb2Zmc2V0O2JyZWFrO2Nhc2UgWkxJQl9GSUxFRlVOQ19TRUVLX0VORDpuZXdfcG9zPW1lbS0+c2l6ZStvZmZzZXQ7YnJlYWs7Y2FzZSBaTElCX0ZJTEVGVU5DX1NFRUtfU0VUOm5ld19wb3M9b2Zmc2V0O2JyZWFrO2RlZmF1bHQ6cmV0dXJuIC0xO31pZihuZXdfcG9zPm1lbS0+c2l6ZSlyZXR1cm4gLTE7bWVtLT5jdXJfb2Zmc2V0PW5ld19wb3M7cmV0dXJuIDA7fQppbnQgWkNBTExCQUNLIGZjbG9zZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0pe3JldHVybiAwO30KaW50IFpDQUxMQkFDSyBmZXJyb3JfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSx2b2lkcGYgc3RyZWFtKXtyZXR1cm4gMDt9CnZvaWQgZmlsbF9tZW1vcnlfZmlsZWZ1bmMoemxpYl9maWxlZnVuY19kZWYqcHpsaWJfZmlsZWZ1bmNfZGVmLG91cm1lbW9yeV90Km91cm1lbSl7cHpsaWJfZmlsZWZ1bmNfZGVmLT56b3Blbl9maWxlPWZvcGVuX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+enJlYWRfZmlsZT1mcmVhZF9tZW1fZnVuYztwemxpYl9maWxlZnVuY19kZWYtPnp3cml0ZV9maWxlPWZ3cml0ZV9tZW1fZnVuYztwemxpYl9maWxlZnVuY19kZWYtPnp0ZWxsX2ZpbGU9ZnRlbGxfbWVtX2Z1bmM7cHpsaWJfZmlsZWZ1bmNfZGVmLT56c2Vla19maWxlPWZzZWVrX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+emNsb3NlX2ZpbGU9ZmNsb3NlX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+emVycm9yX2ZpbGU9ZmVycm9yX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+b3BhcXVlPW91cm1lbTt9CiNlbmRpZgojZW5kaWYK' | \
+            base64 -d > "$MZIP_INC/ioapi_mem.h"
+
+      - name: Patch build.gradle.kts for arm64-only + LuaJIT include
+        working-directory: android
+        run: |
+          echo 'aW1wb3J0IHJlCmNvbnRlbnQgPSBvcGVuKCJhcHAvYnVpbGQuZ3JhZGxlLmt0cyIpLnJlYWQoKQpjb250ZW50ID0gcmUuc3ViKHIiYWJpRmlsdGVycyBcKz0gbGlzdE9mXChbXildK1wpIiwgImFiaUZpbHRlcnMgKz0gbGlzdE9mKFwiYXJtNjQtdjhhXCIpIiwgY29udGVudCkKb2xkID0gIiItRFZDUEtHX1RBUkdFVF9BTkRST0lEPU9OIixcbiAgICAgICAgICAgICAgICAgICAgIi1EQU5EUk9JRF9TVEw9YysrX3NoYXJlZCIiCm5ldyA9ICIiLURWQ1BLR19UQVJHRVRfQU5EUk9JRD1PTiIsXG4gICAgICAgICAgICAgICAgICAgICItREFORFJPSURfU1RMPWMrK19zaGFyZWQiLFxuICAgICAgICAgICAgICAgICAgICAiLURDTUFLRV9DWFhfRkxBR1M9LUkke3Byb2plY3Qucm9vdERpcn0vYXBwL2xpYnMvaW5jbHVkZSIsXG4gICAgICAgICAgICAgICAgICAgICItRExVQUpJVF9JTkNMVURFX0RJUj0ke3Byb2plY3Qucm9vdERpcn0vYXBwL2xpYnMvaW5jbHVkZS9sdWFqaXQiLFxuICAgICAgICAgICAgICAgICAgICAiLURMVUFKSVRfTElCUkFSWT0ke3Byb2plY3Qucm9vdERpcn0vYXBwL2xpYnMvbGliL2FybTY0LXY4YS9saWJsdWFqaXQuYSIiCmNvbnRlbnQgPSBjb250ZW50LnJlcGxhY2Uob2xkLCBuZXcpCm9wZW4oImFwcC9idWlsZC5ncmFkbGUua3RzIiwgInciKS53cml0ZShjb250ZW50KQpwcmludCgiUGF0Y2hlZCBPSyIpCg==' | base64 -d > /tmp/patch_gradle.py
+          python3 /tmp/patch_gradle.py
 
       - name: Bundle data.zip for Android assets
         run: |
           ASSETS_DIR=android/app/src/main/assets
-          rm -f $ASSETS_DIR/data.zip
-          zip -r $ASSETS_DIR/data.zip \
+          mkdir -p "$ASSETS_DIR"
+          rm -f "$ASSETS_DIR/data.zip"
+          zip -r "$ASSETS_DIR/data.zip" \
             data/ modules/ mods/ init.lua otclientrc.lua config.ini cacert.pem \
             --exclude "data/things/*" 2>/dev/null || true
-          zip -r $ASSETS_DIR/data.zip data/things/860/
+          zip -r "$ASSETS_DIR/data.zip" data/things/860/
 
-      - name: Build APK
+      - name: Build APK (debug — instalável sem keystore)
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon
 
       - name: Locate APK
         run: |
-          APK=$(find android -name "*.apk" | head -1)
+          APK=$(find android -name "*debug*.apk" | head -1)
+          echo "APK found: $APK"
           cp "$APK" worldwar-client-android.apk
 
       - name: Create Android Release
@@ -246,12 +274,14 @@ jobs:
           tag_name: ${{ github.event.inputs.version }}-android
           name: "World War Client ${{ github.event.inputs.version }} - Android"
           body: |
-            ## World War Client ${{ github.event.inputs.version }} — Android
+            ## World War Client ${{ github.event.inputs.version }} — Android (arm64)
 
             Servidor: **worldwar.com.br** | Porta: **7171** | Protocolo: **8.60**
 
-            ### Como usar
-            Baixe e instale o APK. Pode ser necessário habilitar "Fontes desconhecidas" nas configurações do Android.
+            ### Como instalar
+            1. Baixe o APK
+            2. No Android: **Configurações → Segurança → Fontes desconhecidas** (habilitar)
+            3. Abra o arquivo APK baixado e instale
           draft: false
           prerelease: false
           files: worldwar-client-android.apk
