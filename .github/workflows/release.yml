@@ -80,32 +80,18 @@ jobs:
           APP="WorldWar.app"
           MACOS="$APP/Contents/MacOS"
           LIBS="$APP/Contents/libs"
-          mkdir -p "$MACOS" "$LIBS"
+          mkdir -p "$MACOS" "$LIBS" "$APP/Contents"
 
           cp build/bin/otclient "$MACOS/"
 
-          # Info.plist
-          cat > "$APP/Contents/Info.plist" << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>CFBundleExecutable</key><string>otclient</string>
-            <key>CFBundleIdentifier</key><string>com.worldwar.otclient</string>
-            <key>CFBundleName</key><string>World War</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>LSMinimumSystemVersion</key><string>11.0</string>
-            <key>NSHighResolutionCapable</key><true/>
-          </dict></plist>
-          EOF
+          echo 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJzaW9uPSIxLjAiPjxkaWN0PgogIDxrZXk+Q0ZCdW5kbGVFeGVjdXRhYmxlPC9rZXk+PHN0cmluZz5vdGNsaWVudDwvc3RyaW5nPgogIDxrZXk+Q0ZCdW5kbGVJZGVudGlmaWVyPC9rZXk+PHN0cmluZz5jb20ud29ybGR3YXIub3RjbGllbnQ8L3N0cmluZz4KICA8a2V5PkNGQnVuZGxlTmFtZTwva2V5PjxzdHJpbmc+V29ybGQgV2FyPC9zdHJpbmc+CiAgPGtleT5DRkJ1bmRsZVBhY2thZ2VUeXBlPC9rZXk+PHN0cmluZz5BUFBMPC9zdHJpbmc+CiAgPGtleT5MU01pbmltdW1TeXN0ZW1WZXJzaW9uPC9rZXk+PHN0cmluZz4xMS4wPC9zdHJpbmc+CiAgPGtleT5OU0hpZ2hSZXNvbHV0aW9uQ2FwYWJsZTwva2V5Pjx0cnVlLz4KPC9kaWN0PjwvcGxpc3Q+Cg==' | base64 -d > "$APP/Contents/Info.plist"
 
-          # Copiar dylibs manualmente
           BINARY="$MACOS/otclient"
           for dylib in $(otool -L "$BINARY" | awk '/\/opt\/homebrew|\/usr\/local/{print $1}'); do
             cp "$dylib" "$LIBS/" 2>/dev/null || true
             install_name_tool -change "$dylib" "@executable_path/../libs/$(basename $dylib)" "$BINARY" 2>/dev/null || true
           done
 
-          # Copiar assets
           cp *.lua "$MACOS/" 2>/dev/null || true
           cp -r data "$MACOS/"
           cp -r modules "$MACOS/"
@@ -113,21 +99,10 @@ jobs:
           cp config.ini "$MACOS/" 2>/dev/null || true
           cp cacert.pem "$MACOS/" 2>/dev/null || true
 
-          # Remove arquivos não-binários que impedem codesign
-          find "$APP" -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" | xargs rm -f 2>/dev/null || true
+          find "$APP" \( -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" \) -exec rm -f {} + 2>/dev/null || true
 
-          # Entitlements: permite JIT (LuaJIT) no Apple Silicon
-          cat > /tmp/entitlements.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>com.apple.security.cs.allow-jit</key><true/>
-  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
-  <key>com.apple.security.cs.disable-library-validation</key><true/>
-</dict></plist>
-EOF
+          echo 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCFET0NUWVBFIHBsaXN0IFBVQkxJQyAiLS8vQXBwbGUvL0RURCBQTElTVCAxLjAvL0VOIiAiaHR0cDovL3d3dy5hcHBsZS5jb20vRFREcy9Qcm9wZXJ0eUxpc3QtMS4wLmR0ZCI+CjxwbGlzdCB2ZXJzaW9uPSIxLjAiPjxkaWN0PgogIDxrZXk+Y29tLmFwcGxlLnNlY3VyaXR5LmNzLmFsbG93LWppdDwva2V5Pjx0cnVlLz4KICA8a2V5PmNvbS5hcHBsZS5zZWN1cml0eS5jcy5hbGxvdy11bnNpZ25lZC1leGVjdXRhYmxlLW1lbW9yeTwva2V5Pjx0cnVlLz4KICA8a2V5PmNvbS5hcHBsZS5zZWN1cml0eS5jcy5kaXNhYmxlLWxpYnJhcnktdmFsaWRhdGlvbjwva2V5Pjx0cnVlLz4KPC9kaWN0PjwvcGxpc3Q+Cg==' | base64 -d > /tmp/entitlements.plist
 
-          # Assina binário com entitlements JIT e dylibs
           codesign --force --sign - --entitlements /tmp/entitlements.plist "$MACOS/otclient"
           find "$LIBS" -name "*.dylib" -exec codesign --force --sign - {} \; 2>/dev/null || true
 
@@ -223,7 +198,8 @@ EOF
           cp src/libluajit.a $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/liblua.a
           cp src/lua.h src/luaconf.h src/lualib.h src/lauxlib.h src/luajit.h \
             $GITHUB_WORKSPACE/android/app/libs/include/luajit/
-          printf 'extern "C" {\n#include "lua.h"\n#include "lualib.h"\n#include "lauxlib.h"\n}\n' > $GITHUB_WORKSPACE/android/app/libs/include/luajit/lua.hpp
+          printf 'extern "C" {\n#include "lua.h"\n#include "lualib.h"\n#include "lauxlib.h"\n}\n' \
+            > $GITHUB_WORKSPACE/android/app/libs/include/luajit/lua.hpp
 
       - name: Build OpenAL-Soft for Android arm64
         run: |
@@ -261,41 +237,8 @@ EOF
             xargs -I{} cp {} $GITHUB_WORKSPACE/android/app/libs/lib/arm64-v8a/libminizip.a
           mkdir -p $GITHUB_WORKSPACE/android/app/libs/include/minizip
           find /tmp/minizip -maxdepth 2 -name "*.h" -exec cp {} $GITHUB_WORKSPACE/android/app/libs/include/minizip/ \; 2>/dev/null || true
-          # ioapi_mem.h não está no minizip-ng — criar o header manualmente
-          cat > $GITHUB_WORKSPACE/android/app/libs/include/minizip/ioapi_mem.h << 'IOAPI_EOF'
-#ifndef _IOAPI_MEM_H
-#define _IOAPI_MEM_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "ioapi.h"
-typedef struct ourmemory_s {
-    char *base;
-    uLong size;
-    uLong limit;
-    uLong cur_offset;
-    int grow;
-} ourmemory_t;
-voidpf ZCALLBACK fopen_mem_func(voidpf opaque, const char* filename, int mode);
-uLong  ZCALLBACK fread_mem_func(voidpf opaque, voidpf stream, void* buf, uLong size);
-uLong  ZCALLBACK fwrite_mem_func(voidpf opaque, voidpf stream, const void* buf, uLong size);
-long   ZCALLBACK ftell_mem_func(voidpf opaque, voidpf stream);
-long   ZCALLBACK fseek_mem_func(voidpf opaque, voidpf stream, uLong offset, int origin);
-int    ZCALLBACK fclose_mem_func(voidpf opaque, voidpf stream);
-int    ZCALLBACK ferror_mem_func(voidpf opaque, voidpf stream);
-void fill_memory_filefunc(zlib_filefunc_def* pzlib_filefunc_def, ourmemory_t* ourmem);
-#ifndef IOAPI_MEM_IMPLEMENTATION
-voidpf ZCALLBACK fopen_mem_func(voidpf opaque,const char*filename,int mode){return opaque;}
-uLong ZCALLBACK fread_mem_func(voidpf opaque,voidpf stream,void*buf,uLong size){ourmemory_t*mem=(ourmemory_t*)stream;if(mem->cur_offset+size>mem->size)size=mem->size-mem->cur_offset;memcpy(buf,mem->base+mem->cur_offset,size);mem->cur_offset+=size;return size;}
-uLong ZCALLBACK fwrite_mem_func(voidpf opaque,voidpf stream,const void*buf,uLong size){ourmemory_t*mem=(ourmemory_t*)stream;if(mem->cur_offset+size>mem->limit){if(!mem->grow)return 0;mem->limit=mem->cur_offset+size;mem->base=(char*)realloc(mem->base,mem->limit);}if(mem->cur_offset+size>mem->size)mem->size=mem->cur_offset+size;memcpy(mem->base+mem->cur_offset,buf,size);mem->cur_offset+=size;return size;}
-long ZCALLBACK ftell_mem_func(voidpf opaque,voidpf stream){ourmemory_t*mem=(ourmemory_t*)stream;return mem->cur_offset;}
-long ZCALLBACK fseek_mem_func(voidpf opaque,voidpf stream,uLong offset,int origin){ourmemory_t*mem=(ourmemory_t*)stream;uLong new_pos;switch(origin){case ZLIB_FILEFUNC_SEEK_CUR:new_pos=mem->cur_offset+offset;break;case ZLIB_FILEFUNC_SEEK_END:new_pos=mem->size+offset;break;case ZLIB_FILEFUNC_SEEK_SET:new_pos=offset;break;default:return -1;}if(new_pos>mem->size)return -1;mem->cur_offset=new_pos;return 0;}
-int ZCALLBACK fclose_mem_func(voidpf opaque,voidpf stream){return 0;}
-int ZCALLBACK ferror_mem_func(voidpf opaque,voidpf stream){return 0;}
-void fill_memory_filefunc(zlib_filefunc_def*pzlib_filefunc_def,ourmemory_t*ourmem){pzlib_filefunc_def->zopen_file=fopen_mem_func;pzlib_filefunc_def->zread_file=fread_mem_func;pzlib_filefunc_def->zwrite_file=fwrite_mem_func;pzlib_filefunc_def->ztell_file=ftell_mem_func;pzlib_filefunc_def->zseek_file=fseek_mem_func;pzlib_filefunc_def->zclose_file=fclose_mem_func;pzlib_filefunc_def->zerror_file=ferror_mem_func;pzlib_filefunc_def->opaque=ourmem;}
-#endif
-#endif
-IOAPI_EOF
+          echo 'I2lmbmRlZiBfSU9BUElfTUVNX0gKI2RlZmluZSBfSU9BUElfTUVNX0gKI2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzdGRsaWIuaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSAiaW9hcGkuaCIKdHlwZWRlZiBzdHJ1Y3Qgb3VybWVtb3J5X3MgewogICAgY2hhciAqYmFzZTsgdUxvbmcgc2l6ZTsgdUxvbmcgbGltaXQ7IHVMb25nIGN1cl9vZmZzZXQ7IGludCBncm93Owp9IG91cm1lbW9yeV90Owp2b2lkcGYgWkNBTExCQUNLIGZvcGVuX21lbV9mdW5jKHZvaWRwZiBvcGFxdWUsIGNvbnN0IGNoYXIqIGZpbGVuYW1lLCBpbnQgbW9kZSk7CnVMb25nICBaQ0FMTEJBQ0sgZnJlYWRfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSwgdm9pZCogYnVmLCB1TG9uZyBzaXplKTsKdUxvbmcgIFpDQUxMQkFDSyBmd3JpdGVfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSwgY29uc3Qgdm9pZCogYnVmLCB1TG9uZyBzaXplKTsKbG9uZyAgIFpDQUxMQkFDSyBmdGVsbF9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtKTsKbG9uZyAgIFpDQUxMQkFDSyBmc2Vla19tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtLCB1TG9uZyBvZmZzZXQsIGludCBvcmlnaW4pOwppbnQgICAgWkNBTExCQUNLIGZjbG9zZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLCB2b2lkcGYgc3RyZWFtKTsKaW50ICAgIFpDQUxMQkFDSyBmZXJyb3JfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSwgdm9pZHBmIHN0cmVhbSk7CnZvaWQgZmlsbF9tZW1vcnlfZmlsZWZ1bmMoemxpYl9maWxlZnVuY19kZWYqIHB6bGliX2ZpbGVmdW5jX2RlZiwgb3VybWVtb3J5X3QqIG91cm1lbSk7CiNpZm5kZWYgSU9BUElfTUVNX0lNUExFTUVOVEFUSU9OCnZvaWRwZiBaQ0FMTEJBQ0sgZm9wZW5fbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSxjb25zdCBjaGFyKmZpbGVuYW1lLGludCBtb2RlKXtyZXR1cm4gb3BhcXVlO30KdUxvbmcgWkNBTExCQUNLIGZyZWFkX21lbV9mdW5jKHZvaWRwZiBvcGFxdWUsdm9pZHBmIHN0cmVhbSx2b2lkKmJ1Zix1TG9uZyBzaXplKXtvdXJtZW1vcnlfdCptZW09KG91cm1lbW9yeV90KilzdHJlYW07aWYobWVtLT5jdXJfb2Zmc2V0K3NpemU+bWVtLT5zaXplKXNpemU9bWVtLT5zaXplLW1lbS0+Y3VyX29mZnNldDttZW1jcHkoYnVmLG1lbS0+YmFzZSttZW0tPmN1cl9vZmZzZXQsc2l6ZSk7bWVtLT5jdXJfb2Zmc2V0Kz1zaXplO3JldHVybiBzaXplO30KdUxvbmcgWkNBTExCQUNLIGZ3cml0ZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0sY29uc3Qgdm9pZCpidWYsdUxvbmcgc2l6ZSl7b3VybWVtb3J5X3QqbWVtPShvdXJtZW1vcnlfdCopc3RyZWFtO2lmKG1lbS0+Y3VyX29mZnNldCtzaXplPm1lbS0+bGltaXQpe2lmKCFtZW0tPmdyb3cpcmV0dXJuIDA7bWVtLT5saW1pdD1tZW0tPmN1cl9vZmZzZXQrc2l6ZTttZW0tPmJhc2U9KGNoYXIqKXJlYWxsb2MobWVtLT5iYXNlLG1lbS0+bGltaXQpO31pZihtZW0tPmN1cl9vZmZzZXQrc2l6ZT5tZW0tPnNpemUpbWVtLT5zaXplPW1lbS0+Y3VyX29mZnNldCtzaXplO21lbWNweShtZW0tPmJhc2UrbWVtLT5jdXJfb2Zmc2V0LGJ1ZixzaXplKTttZW0tPmN1cl9vZmZzZXQrPXNpemU7cmV0dXJuIHNpemU7fQpsb25nIFpDQUxMQkFDSyBmdGVsbF9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0pe291cm1lbW9yeV90Km1lbT0ob3VybWVtb3J5X3QqKXN0cmVhbTtyZXR1cm4gbWVtLT5jdXJfb2Zmc2V0O30KbG9uZyBaQ0FMTEJBQ0sgZnNlZWtfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSx2b2lkcGYgc3RyZWFtLHVMb25nIG9mZnNldCxpbnQgb3JpZ2luKXtvdXJtZW1vcnlfdCptZW09KG91cm1lbW9yeV90KilzdHJlYW07dUxvbmcgbmV3X3Bvcztzd2l0Y2gob3JpZ2luKXtjYXNlIFpMSUJfRklMRUZVTkNfU0VFS19DVVI6bmV3X3Bvcz1tZW0tPmN1cl9vZmZzZXQrb2Zmc2V0O2JyZWFrO2Nhc2UgWkxJQl9GSUxFRlVOQ19TRUVLX0VORDpuZXdfcG9zPW1lbS0+c2l6ZStvZmZzZXQ7YnJlYWs7Y2FzZSBaTElCX0ZJTEVGVU5DX1NFRUtfU0VUOm5ld19wb3M9b2Zmc2V0O2JyZWFrO2RlZmF1bHQ6cmV0dXJuIC0xO31pZihuZXdfcG9zPm1lbS0+c2l6ZSlyZXR1cm4gLTE7bWVtLT5jdXJfb2Zmc2V0PW5ld19wb3M7cmV0dXJuIDA7fQppbnQgWkNBTExCQUNLIGZjbG9zZV9tZW1fZnVuYyh2b2lkcGYgb3BhcXVlLHZvaWRwZiBzdHJlYW0pe3JldHVybiAwO30KaW50IFpDQUxMQkFDSyBmZXJyb3JfbWVtX2Z1bmModm9pZHBmIG9wYXF1ZSx2b2lkcGYgc3RyZWFtKXtyZXR1cm4gMDt9CnZvaWQgZmlsbF9tZW1vcnlfZmlsZWZ1bmMoemxpYl9maWxlZnVuY19kZWYqcHpsaWJfZmlsZWZ1bmNfZGVmLG91cm1lbW9yeV90Km91cm1lbSl7cHpsaWJfZmlsZWZ1bmNfZGVmLT56b3Blbl9maWxlPWZvcGVuX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+enJlYWRfZmlsZT1mcmVhZF9tZW1fZnVuYztwemxpYl9maWxlZnVuY19kZWYtPnp3cml0ZV9maWxlPWZ3cml0ZV9tZW1fZnVuYztwemxpYl9maWxlZnVuY19kZWYtPnp0ZWxsX2ZpbGU9ZnRlbGxfbWVtX2Z1bmM7cHpsaWJfZmlsZWZ1bmNfZGVmLT56c2Vla19maWxlPWZzZWVrX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+emNsb3NlX2ZpbGU9ZmNsb3NlX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+emVycm9yX2ZpbGU9ZmVycm9yX21lbV9mdW5jO3B6bGliX2ZpbGVmdW5jX2RlZi0+b3BhcXVlPW91cm1lbTt9CiNlbmRpZgojZW5kaWYK' | \
+            base64 -d > $GITHUB_WORKSPACE/android/app/libs/include/minizip/ioapi_mem.h
 
       - name: Setup vcpkg
         run: |
@@ -338,4 +281,3 @@ IOAPI_EOF
           draft: false
           prerelease: false
           files: worldwar-client-android.apk
-
