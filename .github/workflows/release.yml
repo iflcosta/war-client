@@ -72,7 +72,8 @@ jobs:
             -DOPTIONS_ENABLE_IPO=OFF \
             -DOPTIONS_ENABLE_CCACHE=ON \
             -DOTCLIENT_BUILD_TESTS=OFF \
-            -DX_VCPKG_BINARY_CACHING=OFF
+            -DX_VCPKG_BINARY_CACHING=OFF \
+            -DCMAKE_CXX_FLAGS="-DLUAJIT_DISABLE_JIT"
           cmake --build build --target otclient
 
       - name: Package .app bundle
