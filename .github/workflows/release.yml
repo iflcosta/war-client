@@ -113,6 +113,14 @@ jobs:
           cp config.ini "$MACOS/" 2>/dev/null || true
           cp cacert.pem "$MACOS/" 2>/dev/null || true
 
+          # Remove arquivos não-binários que impedem codesign --deep
+          find "$APP" -name "*.project" -o -name "*.sublime-project" -o -name ".DS_Store" | xargs rm -f 2>/dev/null || true
+
+          # Assina binário e dylibs primeiro, depois o bundle
+          codesign --force --sign - "$MACOS/otclient"
+          find "$LIBS" -name "*.dylib" -exec codesign --force --sign - {} \; 2>/dev/null || true
+          codesign --force --sign - "$APP"
+
           zip -r worldwar-client-macos.zip "$APP"
 
       - name: Create macOS Release
