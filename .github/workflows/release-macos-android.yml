@@ -159,12 +159,36 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install NDK, CMake and Game Activity
+      - name: Install NDK and CMake
         run: |
           echo "y" | sdkmanager "cmake;3.22.1"
-          echo "y" | sdkmanager "games;game-activity:2.0.2"
           NDK_VER=$(ls $ANDROID_SDK_ROOT/ndk/ | sort -V | tail -1)
           echo "NDK_VERSION=$NDK_VER" >> $GITHUB_ENV
+          echo "NDK_PATH=$ANDROID_SDK_ROOT/ndk/$NDK_VER" >> $GITHUB_ENV
+
+      - name: Install game-activity cmake files from Maven
+        run: |
+          GA_VERSION="2.0.2"
+          GA_DIR="$ANDROID_SDK_ROOT/games/game-activity/$GA_VERSION"
+          mkdir -p "$GA_DIR"
+          curl -fsSL "https://maven.google.com/androidx/games/games-activity/$GA_VERSION/games-activity-$GA_VERSION.aar" \
+            -o /tmp/game-activity.aar
+          unzip -o /tmp/game-activity.aar "prefab/*" -d /tmp/ga-prefab
+          mkdir -p "$GA_DIR/cmake"
+          # Copiar headers e cmake config do prefab
+          cp -r /tmp/ga-prefab/prefab "$GA_DIR/"
+          # Gerar um cmake config simples que aponta para os headers/libs do prefab
+          MODULES_DIR="/tmp/ga-prefab/prefab/modules/game-activity"
+          LIB_DIR="$MODULES_DIR/libs/android.arm64-v8a"
+          HDR_DIR="$MODULES_DIR/include"
+          cat > "$GA_DIR/cmake/game-activity-config.cmake" << EOF
+          set(game-activity_FOUND TRUE)
+          add_library(game-activity::game-activity STATIC IMPORTED)
+          set_target_properties(game-activity::game-activity PROPERTIES
+            IMPORTED_LOCATION "$LIB_DIR/libgame-activity.a"
+            INTERFACE_INCLUDE_DIRECTORIES "$HDR_DIR"
+          )
+          EOF
 
       - name: Download game assets (dat/spr)
         run: |
@@ -191,7 +215,6 @@ jobs:
 
       - name: Build native libs (arm64-v8a)
         run: |
-          NDK_PATH=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION
           GAME_ACTIVITY_DIR=$ANDROID_SDK_ROOT/games/game-activity/2.0.2
           cmake -S . -B build-android \
             -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
