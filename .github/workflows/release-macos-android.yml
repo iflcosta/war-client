@@ -229,6 +229,10 @@ jobs:
             -DMZ_BUILD_TESTS=OFF \
             -DMZ_BUILD_UNIT_TESTS=OFF \
             -DMZ_COMPAT=ON \
+            -DMZ_LZMA=OFF \
+            -DMZ_BZIP2=OFF \
+            -DMZ_PKCRYPT=ON \
+            -DMZ_WZAES=ON \
             -DBUILD_SHARED_LIBS=OFF
           cmake --build /tmp/minizip-build -j$(nproc)
           find /tmp/minizip-build -name "libminizip*.a" | head -1 | \
