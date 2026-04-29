@@ -259,6 +259,12 @@ jobs:
           /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
           echo "VCPKG_ROOT=/tmp/vcpkg" >> $GITHUB_ENV
 
+      - name: Patch vcpkg triplet to disable LZMA/PPMD in minizip-ng
+        run: |
+          TRIPLET_FILE="/tmp/vcpkg/triplets/community/arm64-android.cmake"
+          echo 'set(VCPKG_BUILD_TYPE release)' >> "$TRIPLET_FILE"
+          echo 'list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DMZ_LZMA=OFF" "-DMZ_BZIP2=OFF" "-DMZ_ZSTD=OFF")' >> "$TRIPLET_FILE"
+
       - name: Bundle data.zip for Android assets
         run: |
           ASSETS_DIR=android/app/src/main/assets
