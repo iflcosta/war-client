@@ -155,13 +155,15 @@ jobs:
 
       - name: Download game assets (dat/spr)
         run: |
-          gh release download v1.0.0-assets \
+          gh release download v1.0.7-windows \
             --repo iflcosta/war-client \
-            --pattern "860.zip" \
-            --output /tmp/860.zip
+            --pattern "worldwar-client-windows.zip" \
+            --output /tmp/assets.zip
           mkdir -p data/things/860
-          unzip -o /tmp/860.zip "860/Tibia.dat" "860/Tibia.spr" "860/Tibia.otfi" -d /tmp/things_tmp
-          cp /tmp/things_tmp/860/* data/things/860/
+          unzip -o /tmp/assets.zip -d /tmp/extracted_assets
+          find /tmp/extracted_assets -name "Tibia.dat" -exec cp {} data/things/860/ \;
+          find /tmp/extracted_assets -name "Tibia.spr" -exec cp {} data/things/860/ \;
+          find /tmp/extracted_assets -name "Tibia.otfi" -exec cp {} data/things/860/ \;
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
