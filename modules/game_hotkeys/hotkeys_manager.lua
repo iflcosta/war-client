@@ -132,6 +132,22 @@ function init()
         onGameEnd = offline
     })
 
+    -- Sincronização de Hotkeys por Vocação (Opcode 131)
+    ProtocolGame.registerExtendedOpcode(131, function(protocol, opcode, buffer)
+        local hotkeySettings = g_settings.getNode('game_hotkeys') or {}
+        local serverHost = G.host and string.gsub(G.host, "^https?://", "") or "unknown"
+        local key = getVocKey(g_game.getLocalPlayer())
+        
+        local success, hotkeys = pcall(function() return json.decode(buffer) end)
+        if success and hotkeys then
+            if not hotkeySettings[serverHost] then hotkeySettings[serverHost] = {} end
+            hotkeySettings[serverHost][key] = hotkeys
+            g_settings.setNode('game_hotkeys', hotkeySettings)
+            g_settings.save()
+            reload()
+        end
+    end)
+
     load()
 end
 
@@ -310,6 +326,14 @@ function save()
     hotkeyList = hotkeys
     g_settings.setNode('game_hotkeys', hotkeySettings)
     g_settings.save()
+
+    -- Envia para o servidor se estiver online
+    if g_game.isOnline() then
+        local protocol = g_game.getProtocolGame()
+        if protocol then
+            protocol:sendExtendedOpcode(131, json.encode(hotkeys))
+        end
+    end
 end
 
 function loadDefautComboKeys()
