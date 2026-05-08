@@ -1,0 +1,60 @@
+BestiaryTrackerEntry < Panel
+  height: 38
+  margin-top: 3
+
+  UICreature
+    id: creature
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  Label
+    id: creatureName
+    font: verdana-11px-rounded
+    anchors.left: creature.right
+    anchors.top: parent.top
+    margin-left: 4
+    width: 120
+    text-auto-resize: true
+
+  Label
+    id: killCount
+    font: verdana-11px-antialised
+    color: #c8c8c8
+    anchors.left: creatureName.left
+    anchors.top: creatureName.bottom
+    margin-top: 2
+    width: 80
+
+  Label
+    id: progressLevel
+    font: verdana-11px-antialised
+    color: #c8c8c8
+    anchors.right: parent.right
+    anchors.top: killCount.top
+    width: 32
+    text-align: right
+
+  UIProgressBar
+    id: progressBar
+    height: 4
+    background-color: #1b7400
+    border: 1 black
+    anchors.left: creatureName.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-bottom: 2
+
+BestiaryTrackerMini < MiniWindow
+  id: bestiaryTrackerWindow
+  text: Bestiary Tracker
+  height: 150
+  icon: /images/topbuttons/ciclopedia
+  &save: true
+
+  MiniWindowContents
+    id: contentsPanel
+    padding-left: 5
+    padding-right: 5
+    padding-top: 5
+    layout: verticalBox

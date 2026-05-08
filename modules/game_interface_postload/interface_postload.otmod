@@ -1,0 +1,10 @@
+Module
+  name: game_interface_postload
+  description: Reapply game interface view after dependent UI modules are loaded
+  author: OTClient team
+  website: https://github.com/edubart/otclient
+  sandboxed: true
+  dependencies: [ game_interface ]
+  scripts: [ interface_postload ]
+  @onLoad: init()
+  @onUnload: terminate()

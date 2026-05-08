@@ -2,7 +2,6 @@ MainWindow
   id: waitingWindow
   !text: tr('Waiting List')
   size: 260 180
-  draggable: false
   @onEscape: CharacterList.cancelWait()
 
   Label

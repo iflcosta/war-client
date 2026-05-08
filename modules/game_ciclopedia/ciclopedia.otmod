@@ -1,0 +1,10 @@
+Module
+  name: game_ciclopedia
+  description: Game ciclopedia
+  author: Reddington#9222
+  sandboxed: true
+  scripts: [ charms, bestiary, ciclopedia, map ]
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

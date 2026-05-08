@@ -1,12 +1,13 @@
--- @docclass
-UIButton = extends(UIWidget, 'UIButton')
+UIButton = extends(UIWidget, "UIButton")
 
 function UIButton.create()
-    local button = UIButton.internalCreate()
-    button:setFocusable(false)
-    return button
+	local button = UIButton.internalCreate()
+
+	button:setFocusable(false)
+
+	return button
 end
 
 function UIButton:onMouseRelease(pos, button)
-    return self:isPressed()
+	return self:isPressed()
 end

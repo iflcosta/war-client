@@ -1,9 +1,9 @@
 Module
   name: game_shaders
-  description: Manage map (on game screen) shaders
-  author:
-  website:
-  scripts: [ shaders.lua ]
+  description: Load shaders
+  author: otclientv8
+  website: http://otclient.ovh
+  scripts: [ shaders ]
   sandboxed: true
-  @onLoad: ShaderController:init()
-  @onUnload: ShaderController:terminate()
+  @onLoad: init()
+  @onUnload: terminate()

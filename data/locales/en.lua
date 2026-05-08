@@ -1,14 +1,8 @@
-locale = {
-  name = "en",
-  charset = "cp1252",
-  languageName = "English",
-
+installLocale({
+  name = 'en',
+  languageName = 'English',
   formatNumbers = true,
-  decimalSeperator = '.',
   thousandsSeperator = ',',
-
-  -- translations are not needed because everything is already in english
+  decimalSeperator = '.',
   translation = {}
-}
-
-modules.client_locales.installLocale(locale)
+})

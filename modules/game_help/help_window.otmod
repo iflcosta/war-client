@@ -1,0 +1,14 @@
+Module
+  name: help_window
+  description: Help Window
+  author: Otland
+  website: -
+  version: 1
+
+  autoload: true
+  autoload-priority: 1000
+  sandboxed: true
+  dependencies: [ game_interface ]
+  scripts: [ help_window ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,9 +1,0 @@
-Module
-  name: game_reset
-  description: Reset System Modal
-  author: Aethrium
-  website: aethrium
-  scripts: [ game_reset.lua ]
-  sandboxed: true
-  @onLoad: ResetController:init()
-  @onUnload: ResetController:terminate()

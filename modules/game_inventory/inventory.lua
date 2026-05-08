@@ -1,455 +1,773 @@
-local iconTopMenu = nil
-
-local inventoryShrink = false
-local itemSlotsWithDuration = {}
-local updateSlotsDurationEvent = nil
-local DURATION_UPDATE_INTERVAL = 1000
-local pvpModeRadioGroup = nil 
-
-local function getInventoryUi()
-    if inventoryShrink then
-        return inventoryController.ui.offPanel
-    end
-
-    return inventoryController.ui.onPanel
-end
-
-local getSlotPanelBySlot = {
-    [InventorySlotHead] = function(ui) return ui.helmet, ui.helmet.helmet end,
-    [InventorySlotNeck] = function(ui) return ui.amulet, ui.amulet.amulet end,
-    [InventorySlotBack] = function(ui) return ui.backpack, ui.backpack.backpack end,
-    [InventorySlotBody] = function(ui) return ui.armor, ui.armor.armor end,
-    [InventorySlotRight] = function(ui) return ui.shield, ui.shield.shield end,
-    [InventorySlotLeft] = function(ui) return ui.sword, ui.sword.sword end,
-    [InventorySlotLeg] = function(ui) return ui.legs, ui.legs.legs end,
-    [InventorySlotFeet] = function(ui) return ui.boots, ui.boots.boots end,
-    [InventorySlotFinger] = function(ui) return ui.ring, ui.ring.ring end,
-    [InventorySlotAmmo] = function(ui) return ui.tools, ui.tools.tools end
+Icons = {
+    [PlayerStates.Poison] = {
+        path = "/images/game/states/poisoned",
+        id = "condition_poisoned",
+        tooltip = tr("You are poisoned")
+    },
+    [PlayerStates.Burn] = {
+        path = "/images/game/states/burning",
+        id = "condition_burning",
+        tooltip = tr("You are burning")
+    },
+    [PlayerStates.Energy] = {
+        path = "/images/game/states/electrified",
+        id = "condition_electrified",
+        tooltip = tr("You are electrified")
+    },
+    [PlayerStates.Drunk] = {
+        path = "/images/game/states/drunk",
+        id = "condition_drunk",
+        tooltip = tr("You are drunk")
+    },
+    [PlayerStates.ManaShield] = {
+        path = "/images/game/states/magic_shield",
+        id = "condition_magic_shield",
+        tooltip = tr("You are protected by a magic shield")
+    },
+    [PlayerStates.Paralyze] = {
+        path = "/images/game/states/slowed",
+        id = "condition_slowed",
+        tooltip = tr("You are paralysed")
+    },
+    [PlayerStates.Haste] = {
+        path = "/images/game/states/haste",
+        id = "condition_haste",
+        tooltip = tr("You are hasted")
+    },
+    [PlayerStates.Swords] = {
+        path = "/images/game/states/logout_block",
+        id = "condition_logout_block",
+        tooltip = tr("You may not logout during a fight")
+    },
+    [PlayerStates.Drowning] = {
+        path = "/images/game/states/drowning",
+        id = "condition_drowning",
+        tooltip = tr("You are drowning")
+    },
+    [PlayerStates.Freezing] = {
+        path = "/images/game/states/freezing",
+        id = "condition_freezing",
+        tooltip = tr("You are freezing")
+    },
+    [PlayerStates.Dazzled] = {
+        path = "/images/game/states/dazzled",
+        id = "condition_dazzled",
+        tooltip = tr("You are dazzled")
+    },
+    [PlayerStates.Cursed] = {
+        path = "/images/game/states/cursed",
+        id = "condition_cursed",
+        tooltip = tr("You are cursed")
+    },
+    [PlayerStates.PartyBuff] = {
+        path = "/images/game/states/strengthened",
+        id = "condition_strengthened",
+        tooltip = tr("You are strengthened")
+    },
+    [PlayerStates.PzBlock] = {
+        path = "/images/game/states/protection_zone_block",
+        id = "condition_protection_zone_block",
+        tooltip = tr("You may not logout or enter a protection zone")
+    },
+    [PlayerStates.Pz] = {
+        path = "/images/game/states/protection_zone",
+        id = "condition_protection_zone",
+        tooltip = tr("You are within a protection zone")
+    },
+    [PlayerStates.Bleeding] = {
+        path = "/images/game/states/bleeding",
+        id = "condition_bleeding",
+        tooltip = tr("You are bleeding")
+    },
+    [PlayerStates.Hungry] = {
+        path = "/images/game/states/hungry",
+        id = "condition_hungry",
+        tooltip = tr("You are hungry")
+    }
 }
+SkullIcons = {
+    [SkullYellow] = {
+        path = "/images/game/skulls/skull_yellow",
+        id = "skullIcon",
+        tooltip = tr("You are involved in a PvP situation")
+    },
+    [SkullGreen] = {
+        path = "/images/game/skulls/skull_green",
+        id = "skullIcon",
+        tooltip = tr("You are a member of a party")
+    },
+    [SkullWhite] = {
+        path = "/images/game/skulls/skull_white",
+        id = "skullIcon",
+        tooltip = tr("You have attacked an unmarked player")
+    },
+    [SkullRed] = {
+        path = "/images/game/skulls/skull_red",
+        id = "skullIcon",
+        tooltip = tr("You have killed too many unmarked players")
+    },
+    [SkullBlack] = {
+        path = "/images/game/skulls/skull_black",
+        id = "skullIcon",
+        tooltip = tr("You are a murderer")
+    },
+    [SkullOrange] = {
+        path = "/images/game/skulls/skull_orange",
+        id = "skullIcon",
+        tooltip = tr("You are involved in a PvP situation")
+    }
+}
+InventorySlotStyles = {
+    [InventorySlotHead] = "HeadSlot",
+    [InventorySlotNeck] = "NeckSlot",
+    [InventorySlotBack] = "BackSlot",
+    [InventorySlotBody] = "BodySlot",
+    [InventorySlotRight] = "RightSlot",
+    [InventorySlotLeft] = "LeftSlot",
+    [InventorySlotLeg] = "LegSlot",
+    [InventorySlotFeet] = "FeetSlot",
+    [InventorySlotFinger] = "FingerSlot",
+    [InventorySlotAmmo] = "AmmoSlot"
+}
+inventoryWindow = nil
+inventoryPanel = nil
+inventoryButton = nil
+purseButton = nil
+combatControlsWindow = nil
+fightOffensiveBox = nil
+fightBalancedBox = nil
+fightDefensiveBox = nil
+chaseModeButton = nil
+safeFightButton = nil
+mountButton = nil
+fightModeRadioGroup = nil
+chaseModeRadioGroup = nil
+chaseModeStandBox = nil
+chaseModeChaseBox = nil
+buttonPvp = nil
+skillsButton = nil
+battleButton = nil
+vipButton = nil
+questButton = nil
+soulLabel = nil
+capLabel = nil
+conditionPanel = nil
 
-local function formatDuration(duration)
-    return string.format("%dm%02d", duration / 60, duration % 60)
+
+function init()
+    connect(LocalPlayer, {
+        onInventoryChange = onInventoryChange,
+        onBlessingsChange = onBlessingsChange
+    })
+    connect(g_game, {
+        onGameStart = refresh
+    })
+
+    inventoryWindow = g_ui.loadUI("inventory", modules.game_interface.getRightPanel())
+    inventoryWindow:disableResize()
+    inventoryPanel = inventoryWindow:recursiveGetChildById("inventorySlotsPanel")
+
+    if not inventoryWindow.forceOpen then
+        inventoryButton = modules.client_topmenu.addRightGameToggleButton("inventoryButton", tr("Inventory") .. " (Ctrl+I)", "/images/topbuttons/inventory", toggle)
+        inventoryButton:setOn(true)
+    end
+
+    purseButton = inventoryWindow:recursiveGetChildById("purseButton")
+
+    function purseButton.onClick()
+        local purse = g_game.getLocalPlayer():getInventoryItem(InventorySlotPurse)
+        if purse then
+            g_game.use(purse)
+        end
+    end
+
+    skillsButton = inventoryWindow:recursiveGetChildById("skillsButton")
+    battleButton = inventoryWindow:recursiveGetChildById("battleButton")
+    vipButton = inventoryWindow:recursiveGetChildById("vipButton")
+    questButton = inventoryWindow:recursiveGetChildById("questButton")
+    fightOffensiveBox = inventoryWindow:recursiveGetChildById("fightOffensiveBox")
+    fightBalancedBox = inventoryWindow:recursiveGetChildById("fightBalancedBox")
+    fightDefensiveBox = inventoryWindow:recursiveGetChildById("fightDefensiveBox")
+    chaseModeStandBox = inventoryWindow:recursiveGetChildById("chaseModeBoxStand")
+    chaseModeChaseBox = inventoryWindow:recursiveGetChildById("chaseModeBoxChase")
+    chaseModeButton = inventoryWindow:recursiveGetChildById("chaseModeBox")
+    safeFightButton = inventoryWindow:recursiveGetChildById("safeFightBox")
+    buttonPvp = inventoryWindow:recursiveGetChildById("buttonPvp")
+    mountButton = inventoryWindow:recursiveGetChildById("mountButton")
+    mountButton.onClick = onMountButtonClick
+    whiteDoveBox = inventoryWindow:recursiveGetChildById("whiteDoveBox")
+    whiteHandBox = inventoryWindow:recursiveGetChildById("whiteHandBox")
+    yellowHandBox = inventoryWindow:recursiveGetChildById("yellowHandBox")
+    redFistBox = inventoryWindow:recursiveGetChildById("redFistBox")
+    fightModeRadioGroup = UIRadioGroup.create()
+
+    fightModeRadioGroup:addWidget(fightOffensiveBox)
+    fightModeRadioGroup:addWidget(fightBalancedBox)
+    fightModeRadioGroup:addWidget(fightDefensiveBox)
+
+    chaseModeRadioGroup = UIRadioGroup.create()
+
+    chaseModeRadioGroup:addWidget(chaseModeStandBox)
+    chaseModeRadioGroup:addWidget(chaseModeChaseBox)
+    connect(fightModeRadioGroup, {
+        onSelectionChange = onSetFightMode
+    })
+    connect(chaseModeRadioGroup, {
+        onSelectionChange = onSetChaseMode
+    })
+    connect(safeFightButton, {
+        onCheckChange = onSetSafeFight
+    })
+
+    if buttonPvp then
+        connect(buttonPvp, {
+            onClick = onSetSafeFight2
+        })
+    end
+
+    connect(g_game, {
+        onGameStart = online,
+        onGameEnd = offline,
+        onFightModeChange = update,
+        onChaseModeChange = update,
+        onSafeFightChange = update,
+        onPVPModeChange = update,
+        onWalk = check,
+        onAutoWalk = check
+    })
+    connect(LocalPlayer, {
+        onOutfitChange = onOutfitChange
+    })
+
+    if g_game.isOnline() then
+        online()
+    end
+
+    soulLabel = inventoryWindow:recursiveGetChildById("soulLabel")
+    capLabel = inventoryWindow:recursiveGetChildById("capLabel")
+    conditionPanel = inventoryWindow:recursiveGetChildById("conditionPanel")
+
+    connect(LocalPlayer, {
+        onStatesChange = onStatesChange,
+        onSoulChange = onSoulChange,
+        onFreeCapacityChange = onFreeCapacityChange
+    })
+    connect(LocalPlayer, {
+        onSkullChange = onSkullChange,
+        onEmblemChange = onEmblemChange
+    })
+    refresh()
+    inventoryWindow:setup()
+
+    if g_settings.getBoolean("inventoryMinimized", false) then
+        toggleInventoryMinimize(true)
+    end
+
+    inventoryWindow:open()
 end
 
-local function stopEvent()
-    if updateSlotsDurationEvent then
-        removeEvent(updateSlotsDurationEvent)
-        updateSlotsDurationEvent = nil
-    end
-end
 
-local function updateSlotsDuration()
-    -- @ prevent :
-    if not g_game.isOnline() or next(itemSlotsWithDuration) == nil then
-        stopEvent()
-        return
-    end
-    -- @
+function toggleInventoryMinimize(state)
+    local minimized = state or not inventoryWindow:isOn()
+    inventoryWindow:setOn(minimized)
 
-    if not modules.client_options.getOption('showExpiryInInvetory') then
-        stopEvent()
-        local ui = getInventoryUi()
-        for slot, itemDurationReg in pairs(itemSlotsWithDuration) do
-            local getSlotInfo = getSlotPanelBySlot[slot]
-            if getSlotInfo then
-                local slotPanel = getSlotInfo(ui)
-                if slotPanel and slotPanel.item then
-                    slotPanel.item.duration:setText("")
-                end
-            end
+    local contentsPanel = inventoryWindow:getChildById("contentsPanel")
+    local slotsPanel = contentsPanel:getChildById("inventorySlotsPanel")
+    local controlsPanel = contentsPanel:getChildById("inventoryControlsPanel")
+    local minimizeButton = contentsPanel:getChildById("minimizeButton")
+    local capLabel = contentsPanel:getChildById("capLabel")
+    local soulLabel = contentsPanel:getChildById("soulLabel")
+    local conditionPanel = contentsPanel:getChildById("conditionPanel")
+
+    -- Utility buttons
+    local storeButton = controlsPanel:getChildById("storeButton")
+    local stopButton = controlsPanel:getChildById("stopButton")
+    local purseButton = slotsPanel:getChildById("purseButton")
+    local optionsButton = controlsPanel:getChildById("optionsButton")
+    local ciclopediaButton = controlsPanel:getChildById("ciclopediaButton")
+    local questsButton = controlsPanel:getChildById("questsButton")
+    local mountButton = controlsPanel:getChildById("mountButton")
+
+    -- Combat boxes
+    local offensive = controlsPanel:getChildById("fightOffensiveBox")
+    local balanced = controlsPanel:getChildById("fightBalancedBox")
+    local defensive = controlsPanel:getChildById("fightDefensiveBox")
+    local stand = controlsPanel:getChildById("chaseModeBoxStand")
+    local chase = controlsPanel:getChildById("chaseModeBoxChase")
+    local safe = controlsPanel:getChildById("safeFightBox")
+
+    if minimized then
+        slotsPanel:hide()
+        if storeButton then
+            storeButton:hide()
         end
-        return
-    end
-
-    local currTime = g_clock.seconds()
-    local ui = getInventoryUi()
-    local hasItemsWithDuration = false
-
-    for slot, itemDurationReg in pairs(itemSlotsWithDuration) do
-        local item = itemDurationReg.item
-        if item and item:getDurationTime() > 0 then
-            hasItemsWithDuration = true
-            local durationTimeLeft = math.max(0, itemDurationReg.timeEnd - currTime)
-            local getSlotInfo = getSlotPanelBySlot[slot]
-            if getSlotInfo then
-                local slotPanel = getSlotInfo(ui)
-                if slotPanel and slotPanel.item then
-                    slotPanel.item.duration:setText(formatDuration(durationTimeLeft))
-                end
-            end
+        stopButton:hide()
+        optionsButton:hide()
+        ciclopediaButton:hide()
+        questsButton:hide()
+        mountButton:hide()
+        if purseButton then
+            purseButton:hide()
         end
-    end
 
-    if hasItemsWithDuration then
-        updateSlotsDurationEvent = scheduleEvent(updateSlotsDuration, DURATION_UPDATE_INTERVAL)
+        inventoryWindow:setHeight(62)
+        inventoryWindow:setWidth(155)
+
+        -- Cap and Soul placement (stacked)
+        capLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
+        capLabel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        capLabel:setMarginTop(5)
+        capLabel:setMarginLeft(25)
+
+        soulLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
+        soulLabel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        soulLabel:setMarginTop(25)
+        soulLabel:setMarginLeft(25)
+
+        -- Controls Panel layout (Grid 3x2)
+        controlsPanel:addAnchor(AnchorTop, 'parent', AnchorTop)
+        controlsPanel:addAnchor(AnchorLeft, 'capLabel', AnchorRight)
+        controlsPanel:setMarginTop(0)
+        controlsPanel:setMarginLeft(5)
+
+        offensive:addAnchor(AnchorTop, 'parent', AnchorTop)
+        offensive:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        offensive:setMarginTop(3)
+        offensive:setMarginLeft(0)
+
+        balanced:addAnchor(AnchorTop, 'parent', AnchorTop)
+        balanced:addAnchor(AnchorLeft, 'fightOffensiveBox', AnchorRight)
+        balanced:setMarginTop(3)
+        balanced:setMarginLeft(2)
+
+        defensive:addAnchor(AnchorTop, 'parent', AnchorTop)
+        defensive:addAnchor(AnchorLeft, 'fightBalancedBox', AnchorRight)
+        defensive:setMarginTop(3)
+        defensive:setMarginLeft(2)
+
+        stand:addAnchor(AnchorTop, 'fightOffensiveBox', AnchorBottom)
+        stand:addAnchor(AnchorLeft, 'fightOffensiveBox', AnchorLeft)
+        stand:setMarginTop(2)
+        stand:setMarginLeft(0)
+
+        chase:addAnchor(AnchorTop, 'fightBalancedBox', AnchorBottom)
+        chase:addAnchor(AnchorLeft, 'fightBalancedBox', AnchorLeft)
+        chase:setMarginTop(2)
+        chase:setMarginLeft(0)
+
+        safe:addAnchor(AnchorTop, 'fightDefensiveBox', AnchorBottom)
+        safe:addAnchor(AnchorLeft, 'fightDefensiveBox', AnchorLeft)
+        safe:setMarginTop(2)
+        safe:setMarginLeft(0)
+
+        conditionPanel:removeAnchor(AnchorTop)
+        conditionPanel:removeAnchor(AnchorBottom)
+        conditionPanel:removeAnchor(AnchorLeft)
+        conditionPanel:removeAnchor(AnchorRight)
+        conditionPanel:removeAnchor(AnchorHorizontalCenter)
+        conditionPanel:addAnchor(AnchorTop, 'chaseModeBoxStand', AnchorBottom)
+        conditionPanel:addAnchor(AnchorHorizontalCenter, 'controlsPanel', AnchorHorizontalCenter)
+        conditionPanel:setMarginTop(10)
+        conditionPanel:setWidth(120)
+        conditionPanel:setHeight(13)
+        conditionPanel:setMarginLeft(0)
+
+        minimizeButton:setImageClip("14 0 14 14") -- "+" icon
     else
-        stopEvent()
+        slotsPanel:show()
+        if storeButton then
+            storeButton:show()
+        end
+        stopButton:hide()
+        optionsButton:hide()
+        ciclopediaButton:hide()
+        questsButton:hide()
+        mountButton:show()
+        if purseButton then
+            purseButton:show()
+        end
+
+        inventoryWindow:setHeight(170)
+        inventoryWindow:setWidth(170)
+
+        -- Cap and Soul restoration
+        capLabel:addAnchor(AnchorTop, 'inventorySlotsPanel', AnchorTop)
+        capLabel:addAnchor(AnchorLeft, 'inventorySlotsPanel', AnchorLeft)
+        capLabel:setMarginTop(130)
+        capLabel:setMarginLeft(80)
+
+        soulLabel:addAnchor(AnchorTop, 'inventorySlotsPanel', AnchorTop)
+        soulLabel:addAnchor(AnchorLeft, 'inventorySlotsPanel', AnchorLeft)
+        soulLabel:setMarginTop(130)
+        soulLabel:setMarginLeft(5)
+
+        conditionPanel:removeAnchor(AnchorTop)
+        conditionPanel:removeAnchor(AnchorBottom)
+        conditionPanel:removeAnchor(AnchorLeft)
+        conditionPanel:removeAnchor(AnchorRight)
+        conditionPanel:removeAnchor(AnchorHorizontalCenter)
+        conditionPanel:addAnchor(AnchorTop, 'inventorySlotsPanel', AnchorTop)
+        conditionPanel:addAnchor(AnchorHorizontalCenter, 'inventorySlotsPanel', AnchorHorizontalCenter)
+        conditionPanel:setMarginTop(150)
+        conditionPanel:setWidth(110)
+        conditionPanel:setHeight(13)
+        conditionPanel:setMarginLeft(0)
+
+
+        -- Controls panel restoration
+        controlsPanel:addAnchor(AnchorTop, 'parent', AnchorTop)
+        controlsPanel:addAnchor(AnchorLeft, 'inventorySlotsPanel', AnchorRight)
+        controlsPanel:setMarginTop(0)
+        controlsPanel:setMarginLeft(0)
+
+        offensive:addAnchor(AnchorTop, 'parent', AnchorTop)
+        offensive:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        offensive:setMarginTop(5)
+        offensive:setMarginLeft(8)
+
+        balanced:addAnchor(AnchorTop, 'fightOffensiveBox', AnchorBottom)
+        balanced:addAnchor(AnchorLeft, 'fightOffensiveBox', AnchorLeft)
+        balanced:setMarginTop(1)
+        balanced:setMarginLeft(0)
+
+        defensive:addAnchor(AnchorTop, 'fightBalancedBox', AnchorBottom)
+        defensive:addAnchor(AnchorLeft, 'fightBalancedBox', AnchorLeft)
+        defensive:setMarginTop(1)
+        defensive:setMarginLeft(0)
+
+        stand:addAnchor(AnchorTop, 'fightOffensiveBox', AnchorTop)
+        stand:addAnchor(AnchorLeft, 'fightOffensiveBox', AnchorRight)
+        stand:setMarginTop(0)
+        stand:setMarginLeft(4)
+
+        chase:addAnchor(AnchorTop, 'chaseModeBoxStand', AnchorBottom)
+        chase:addAnchor(AnchorLeft, 'chaseModeBoxStand', AnchorLeft)
+        chase:setMarginTop(1)
+        chase:setMarginLeft(0)
+
+        safe:addAnchor(AnchorTop, 'chaseModeBoxChase', AnchorBottom)
+        safe:addAnchor(AnchorLeft, 'chaseModeBoxChase', AnchorLeft)
+        safe:setMarginTop(1)
+        safe:setMarginLeft(0)
+
+        mountButton:addAnchor(AnchorTop, 'safeFightBox', AnchorBottom)
+        mountButton:addAnchor(AnchorLeft, 'safeFightBox', AnchorLeft)
+        mountButton:setMarginTop(1)
+        mountButton:setMarginLeft(0)
+
+        stopButton:addAnchor(AnchorTop, 'mountButton', AnchorBottom)
+        stopButton:addAnchor(AnchorRight, 'safeFightBox', AnchorRight)
+        stopButton:setMarginTop(5)
+
+        questsButton:addAnchor(AnchorTop, 'stopButton', AnchorBottom)
+        questsButton:addAnchor(AnchorLeft, 'stopButton', AnchorLeft)
+        questsButton:addAnchor(AnchorRight, 'stopButton', AnchorRight)
+        questsButton:setMarginTop(3)
+
+        optionsButton:addAnchor(AnchorTop, 'questsButton', AnchorBottom)
+        optionsButton:addAnchor(AnchorLeft, 'questsButton', AnchorLeft)
+        optionsButton:addAnchor(AnchorRight, 'questsButton', AnchorRight)
+        optionsButton:setMarginTop(3)
+
+        ciclopediaButton:addAnchor(AnchorTop, 'optionsButton', AnchorBottom)
+        ciclopediaButton:addAnchor(AnchorLeft, 'optionsButton', AnchorLeft)
+        ciclopediaButton:addAnchor(AnchorRight, 'optionsButton', AnchorRight)
+        ciclopediaButton:setMarginTop(3)
+
+        minimizeButton:setImageClip("0 0 14 14") -- "-" icon
+    end
+
+    g_settings.set("inventoryMinimized", minimized)
+end
+
+
+function terminate()
+    disconnect(LocalPlayer, {
+        onInventoryChange = onInventoryChange,
+        onBlessingsChange = onBlessingsChange
+    })
+    disconnect(g_game, {
+        onGameStart = refresh
+    })
+
+    if g_game.isOnline() then
+        offline()
+    end
+
+    fightModeRadioGroup:destroy()
+    disconnect(g_game, {
+        onGameStart = online,
+        onGameEnd = offline,
+        onFightModeChange = update,
+        onChaseModeChange = update,
+        onSafeFightChange = update,
+        onPVPModeChange = update,
+        onWalk = check,
+        onAutoWalk = check
+    })
+    disconnect(LocalPlayer, {
+        onOutfitChange = onOutfitChange
+    })
+    disconnect(LocalPlayer, {
+        onStatesChange = onStatesChange,
+        onSoulChange = onSoulChange,
+        onFreeCapacityChange = onFreeCapacityChange
+    })
+    disconnect(LocalPlayer, {
+        onSkullChange = onSkullChange,
+        onEmblemChange = onEmblemChange
+    })
+    inventoryWindow:destroy()
+
+    if inventoryButton then
+        inventoryButton:destroy()
     end
 end
 
-local function walkEvent()
-    if modules.client_options.getOption('autoChaseOverride') then
-        if g_game.isAttacking() and g_game.getChaseMode() == ChaseOpponent then
-            selectPosture('stand', false)
+
+function toggleAdventurerStyle(hasBlessing)
+    for slot = InventorySlotFirst, InventorySlotLast do
+        local itemWidget = inventoryPanel:getChildById("slot" .. slot)
+        if itemWidget then
+            itemWidget:setOn(hasBlessing)
         end
     end
 end
 
-local function combatEvent()
-    if g_game.getChaseMode() == ChaseOpponent then
-        selectPosture('follow', true)
-    else
-        selectPosture('stand', true)
-    end
-    
-    if g_game.getFightMode() == FightOffensive then
-        selectCombat('attack', true)
-    elseif g_game.getFightMode() == FightBalanced then
-        selectCombat('balanced', true)
-    elseif g_game.getFightMode() == FightDefensive then
-        selectCombat('defense', true)
-    end
 
-    -- Force aggressive mode (Safe Fight OFF)
-    if g_game.isSafeFight() then
-        g_game.setSafeFight(false)
-    end
-    inventoryController.ui.onPanel.pvp:setChecked(true)
-    inventoryController.ui.offPanel.pvp:setChecked(true)
-end
-
-local function inventoryEvent(player, slot, item, oldItem)
-    if inventoryShrink then
-        return
-    end
-
-    local ui = getInventoryUi()
-    local getSlotInfo = getSlotPanelBySlot[slot]
-    if not getSlotInfo then
-        return
-    end
-
-    local slotPanel, toggler = getSlotInfo(ui)
-
-    slotPanel.item:setItem(item)
-    toggler:setEnabled(not item)
-    slotPanel.item:setWidth(34)
-    slotPanel.item:setHeight(34)
-    slotPanel.item.duration:setText("")
-    slotPanel.item.charges:setText("")
-    if g_game.getFeature(GameThingClock) then
-        if item and item:getDurationTime() > 0 then
-            if not itemSlotsWithDuration[slot] or itemSlotsWithDuration[slot].item ~= item then
-                itemSlotsWithDuration[slot] = {
-                    item = item,
-                    timeEnd = g_clock.seconds() + item:getDurationTime()
-                }
-            end
-            if modules.client_options.getOption('showExpiryInInvetory') then
-                if not updateSlotsDurationEvent then
-                    updateSlotsDuration()
-                end
-            end
-        else
-            itemSlotsWithDuration[slot] = nil
-        end
-    end
-    
-    if modules.client_options.getOption('showExpiryInInvetory') then
-        ItemsDatabase.setCharges(slotPanel.item, item)
-    end
-    ItemsDatabase.setTier(slotPanel.item, item)
-end
-
-local function onSoulChange(localPlayer, soul)
-    local ui = getInventoryUi()
-    if not localPlayer then
-        return
-    end
-    if not soul then
-        return
-    end
-
-    if ui.soulPanel and ui.soulPanel.soul then
-        ui.soulPanel.soul:setText(soul)
-    end
-
-    if ui.soulAndCapacity and ui.soulAndCapacity.soul then
-        ui.soulAndCapacity.soul:setText(soul)
-    end
-end
-
-local function onFreeCapacityChange(player, freeCapacity)
-    if not player then
-        return
-    end
-
-    if not freeCapacity then
-        return
-    end
-    if freeCapacity > 99999 then
-        freeCapacity = math.min(9999, math.floor(freeCapacity / 1000)) .. "k"
-    elseif freeCapacity > 999 then
-        freeCapacity = math.floor(freeCapacity)
-    elseif freeCapacity > 99 then
-        freeCapacity = math.floor(freeCapacity * 10) / 10
-    end
-    local ui = getInventoryUi()
-    if ui.capacityPanel and ui.capacityPanel.capacity then
-        ui.capacityPanel.capacity:setText(freeCapacity)
-    end
-    if ui.soulAndCapacity and ui.soulAndCapacity.capacity then
-        ui.soulAndCapacity.capacity:setText(freeCapacity)
-    end
-end
-
-function getIconsPanelOn()
-    return inventoryController.ui.onPanel.icons
-end
-
-function getIconsPanelOff()
-    return inventoryController.ui.offPanel.icons
-end
-
-local function refreshInventory_panel()
+function refresh()
     local player = g_game.getLocalPlayer()
-    if player then
-        onSoulChange(player, player:getSoul())
-        onFreeCapacityChange(player, player:getFreeCapacity())
-    end
-    if inventoryShrink then
-        return
-    end
 
     for i = InventorySlotFirst, InventorySlotPurse do
         if g_game.isOnline() then
-            inventoryEvent(player, i, player:getInventoryItem(i))
+            onInventoryChange(player, i, player:getInventoryItem(i))
         else
-            inventoryEvent(player, i, nil)
+            onInventoryChange(player, i, nil)
         end
+
+        toggleAdventurerStyle(player and Bit.hasBit(player:getBlessings(), Blessings.Adventurer) or false)
     end
+
+    if player then
+        onSoulChange(player, player:getSoul())
+        onFreeCapacityChange(player, player:getFreeCapacity())
+        onStatesChange(player, player:getStates(), 0)
+    end
+
+    purseButton:setVisible(g_game.getFeature(GamePurseSlot))
 end
 
-local function refreshInventorySizes()
-    if inventoryShrink then
-        inventoryController.ui:setOn(false)
-        inventoryController.ui.onPanel:hide()
-        inventoryController.ui.offPanel:show()
-    else
-        inventoryController.ui:setOn(true)
-        inventoryController.ui.onPanel:show()
-        inventoryController.ui.offPanel:hide()
-        refreshInventory_panel()
-    end
-    combatEvent()
-    walkEvent()
-    modules.game_mainpanel.reloadMainPanelSizes()
-end
 
-function onSetChaseMode(self, selectedChaseModeButton)
-    if selectedChaseModeButton == nil then
+function toggle()
+    if not inventoryButton then
         return
     end
-    
-    local buttonId = selectedChaseModeButton:getId()
-    local chaseMode
-    if buttonId == 'followPosture' then
-        chaseMode = ChaseOpponent
+
+    if inventoryButton:isOn() then
+        inventoryWindow:close()
+        inventoryButton:setOn(false)
     else
-        chaseMode = DontChase
+        inventoryWindow:open()
+        inventoryButton:setOn(true)
     end
-    g_game.setChaseMode(chaseMode)
 end
 
-inventoryController = Controller:new()
-inventoryController:setUI('inventory', modules.game_interface.getMainRightPanel())
 
-function inventoryController:onInit()
-    refreshInventory_panel()
-    local ui = getInventoryUi()
+function onMiniWindowClose()
+    if not inventoryButton then
+        return
+    end
 
-    connect(inventoryController.ui.onPanel.pvp, {
-        onCheckChange = onSetSafeFight
-    })
-    connect(inventoryController.ui.offPanel.pvp, {
-        onCheckChange = onSetSafeFight
-    })
-    connect(inventoryController.ui.onPanel.expert, {
-        onCheckChange = expertMode
-    })
-    pvpModeRadioGroup = UIRadioGroup.create()
-    pvpModeRadioGroup:addWidget(inventoryController.ui.onPanel.whiteDoveBox)
-    pvpModeRadioGroup:addWidget(inventoryController.ui.onPanel.whiteHandBox)
-    pvpModeRadioGroup:addWidget(inventoryController.ui.onPanel.yellowHandBox)
-    pvpModeRadioGroup:addWidget(inventoryController.ui.onPanel.redFistBox)
-    connect(pvpModeRadioGroup, {
-        onSelectionChange = onSetPVPMode
-    })
+    inventoryButton:setOn(false)
 end
 
-function inventoryController:onGameStart()
+
+function onInventoryChange(player, slot, item, oldItem)
+    if InventorySlotPurse < slot then
+        return
+    end
+
+    if slot == InventorySlotPurse then
+        if g_game.getFeature(GamePurseSlot) then
+            -- Nothing
+        end
+        return
+    end
+
+    local itemWidget = inventoryPanel:getChildById("slot" .. slot)
+
+    if item then
+        itemWidget:setStyle("InventoryItem")
+        itemWidget:setItem(item)
+    else
+        itemWidget:setStyle(InventorySlotStyles[slot])
+        itemWidget:setItem(nil)
+    end
+end
+
+
+function onBlessingsChange(player, blessings, oldBlessings)
+    local hasAdventurerBlessing = Bit.hasBit(blessings, Blessings.Adventurer)
+
+    if hasAdventurerBlessing ~= Bit.hasBit(oldBlessings, Blessings.Adventurer) then
+        toggleAdventurerStyle(hasAdventurerBlessing)
+    end
+end
+
+
+function update()
+    local fightMode = g_game.getFightMode()
+
+    if fightMode == FightOffensive then
+        fightModeRadioGroup:selectWidget(fightOffensiveBox)
+    elseif fightMode == FightBalanced then
+        fightModeRadioGroup:selectWidget(fightBalancedBox)
+    else
+        fightModeRadioGroup:selectWidget(fightDefensiveBox)
+    end
+
+    local chaseMode = g_game.getChaseMode()
+
+    if chaseMode == ChaseOpponent then
+        chaseModeRadioGroup:selectWidget(chaseModeChaseBox)
+    else
+        chaseModeRadioGroup:selectWidget(chaseModeStandBox)
+    end
+
+    local safeFight = g_game.isSafeFight()
+    safeFightButton:setChecked(not safeFight)
+
+    if buttonPvp then
+        if safeFight then
+            buttonPvp:setOn(false)
+        else
+            buttonPvp:setOn(true)
+        end
+    end
+
+    if g_game.getFeature(GamePVPMode) then
+        local pvpMode = g_game.getPVPMode()
+        local pvpWidget = getPVPBoxByMode(pvpMode)
+    end
+end
+
+
+function check()
+    if modules.client_options.getOption("autoChaseOverride") and g_game.isAttacking() and g_game.getChaseMode() == ChaseOpponent then
+        g_game.setChaseMode(DontChase)
+    end
+end
+
+
+function online()
     local player = g_game.getLocalPlayer()
+
     if player then
         local char = g_game.getCharacterName()
-        local lastCombatControls = g_settings.getNode('LastCombatControls')
-        if not table.empty(lastCombatControls) then
-            if lastCombatControls[char] then
-                g_game.setFightMode(lastCombatControls[char].fightMode)
-                g_game.setChaseMode(lastCombatControls[char].chaseMode)
-                g_game.setSafeFight(false)
-                inventoryController.ui.onPanel.pvp:setChecked(true)
-                inventoryController.ui.offPanel.pvp:setChecked(true)
-                scheduleEvent(function()
-                    g_game.setSafeFight(false)
-                    if inventoryController and inventoryController.ui then
-                        inventoryController.ui.onPanel.pvp:setChecked(true)
-                        inventoryController.ui.offPanel.pvp:setChecked(true)
-                    end
-                end, 1000)
-                if lastCombatControls[char].pvpMode then
-                    g_game.setPVPMode(lastCombatControls[char].pvpMode)
-                end
+        local lastCombatControls = g_settings.getNode("LastCombatControls")
+
+        if not table.empty(lastCombatControls) and lastCombatControls[char] then
+            g_game.setFightMode(lastCombatControls[char].fightMode)
+            g_game.setChaseMode(lastCombatControls[char].chaseMode)
+            g_game.setSafeFight(lastCombatControls[char].safeFight)
+
+            if lastCombatControls[char].pvpMode then
+                g_game.setPVPMode(lastCombatControls[char].pvpMode)
             end
         end
-    end
-    inventoryController:registerEvents(LocalPlayer, {
-        onInventoryChange = inventoryEvent,
-        onSoulChange = onSoulChange,
-        onFreeCapacityChange = onFreeCapacityChange
-    }):execute()
 
-    inventoryController:registerEvents(g_game, {
-        onWalk = walkEvent,
-        onAutoWalk = walkEvent,
-        onFightModeChange = combatEvent,
-        onChaseModeChange = combatEvent,
-        onSafeFightChange = combatEvent,
-        onPVPModeChange = combatEvent
-    }):execute()
-
-    inventoryShrink = g_settings.getBoolean('mainpanel_shrink_inventory')
-    refreshInventorySizes()
-    refreshInventory_panel()
-
-    local elements = {
-        {inventoryController.ui.offPanel.blessings, inventoryController.ui.onPanel.blessings},
-        {inventoryController.ui.offPanel.expert, inventoryController.ui.onPanel.expert},
-        {inventoryController.ui.onPanel.whiteDoveBox},
-        {inventoryController.ui.onPanel.whiteHandBox},
-        {inventoryController.ui.onPanel.yellowHandBox},
-        {inventoryController.ui.onPanel.redFistBox}
-    }
-    
-    local showBlessings = g_game.getClientVersion() >= 1000
-    local showPVPMode = g_game.getFeature(GamePVPMode)
-    
-    for i, elementGroup in ipairs(elements) do
-        local show = (i == 1 and showBlessings) or (i > 1 and showPVPMode)
-        for _, element in ipairs(elementGroup) do
-            if show then
-                element:show()
-            else
-                element:hide()
-            end
+        if g_game.getFeature(GamePlayerMounts) then
+            mountButton:setVisible(true)
+            mountButton:setChecked(player:isMounted())
+        else
+            mountButton:setVisible(false)
         end
     end
-    inventoryController.ui.onPanel.purseButton:setVisible(g_game.getFeature(GamePurseSlot))
+
+    update()
 end
 
-function inventoryController:onGameEnd()
-    stopEvent()
 
-    local lastCombatControls = g_settings.getNode('LastCombatControls')
-    if not lastCombatControls then
-        lastCombatControls = {}
-    end
+function offline()
+    local lastCombatControls = g_settings.getNode("LastCombatControls")
+    lastCombatControls = lastCombatControls or {}
+
+    conditionPanel:destroyChildren()
+
     local player = g_game.getLocalPlayer()
+
     if player then
         local char = g_game.getCharacterName()
         lastCombatControls[char] = {
             fightMode = g_game.getFightMode(),
             chaseMode = g_game.getChaseMode(),
-            safeFight = false
+            safeFight = g_game.isSafeFight()
         }
+
         if g_game.getFeature(GamePVPMode) then
             lastCombatControls[char].pvpMode = g_game.getPVPMode()
         end
-        g_settings.setNode('LastCombatControls', lastCombatControls)
+
+        g_settings.setNode("LastCombatControls", lastCombatControls)
     end
 end
 
-function inventoryController:onTerminate()
-    if iconTopMenu then
-        iconTopMenu:destroy()
-        iconTopMenu = nil
+
+function onSetFightMode(self, selectedFightButton)
+    if selectedFightButton == nil then
+        return
     end
-    if pvpModeRadioGroup then
-        disconnect(pvpModeRadioGroup, {
-            onSelectionChange = onSetPVPMode
-        })
-        pvpModeRadioGroup:destroy()
-        pvpModeRadioGroup = nil
+
+    local buttonId = selectedFightButton:getId()
+    local fightMode = nil
+
+    if buttonId == "fightOffensiveBox" then
+        fightMode = FightOffensive
+    elseif buttonId == "fightBalancedBox" then
+        fightMode = FightBalanced
+    else
+        fightMode = FightDefensive
     end
+
+    g_game.setFightMode(fightMode)
 end
+
+
+function onSetChaseMode(self, selectedButton)
+    if selectedButton == nil then
+        return
+    end
+
+    local buttonId = selectedButton:getId()
+    local chaseMode = nil
+
+    if buttonId == "chaseModeBoxChase" then
+        chaseMode = ChaseOpponent
+    else
+        chaseMode = DontChase
+    end
+
+    g_game.setChaseMode(chaseMode)
+end
+
 
 function onSetSafeFight(self, checked)
-    -- Always force aggressive mode (checked = true, safeFight = false)
-    inventoryController.ui.onPanel.pvp:setChecked(true)
-    inventoryController.ui.offPanel.pvp:setChecked(true)
-    g_game.setSafeFight(false)
-end
+    g_game.setSafeFight(not checked)
 
-function selectPosture(key, ignoreUpdate)
-    local ui = getInventoryUi()
-    if key == 'stand' then
-        ui.standPosture:setEnabled(false)
-        ui.followPosture:setEnabled(true)
-        if not ignoreUpdate then
-            g_game.setChaseMode(DontChase)
-        end
-    elseif key == 'follow' then
-        ui.standPosture:setEnabled(true)
-        ui.followPosture:setEnabled(false)
-        if not ignoreUpdate then
-            g_game.setChaseMode(ChaseOpponent)
+    if buttonPvp then
+        if not checked then
+            buttonPvp:setOn(false)
+        else
+            buttonPvp:setOn(true)
         end
     end
 end
 
-function selectCombat(combat, ignoreUpdate)
-    local ui = getInventoryUi()
-    if combat == 'attack' then
-        ui.attack:setEnabled(false)
-        ui.balanced:setEnabled(true)
-        ui.defense:setEnabled(true)
-        if not ignoreUpdate then
-            g_game.setFightMode(FightOffensive)
-        end
-    elseif combat == 'balanced' then
-        ui.attack:setEnabled(true)
-        ui.balanced:setEnabled(false)
-        ui.defense:setEnabled(true)
-        if not ignoreUpdate then
-            g_game.setFightMode(FightBalanced)
-        end
-    elseif combat == 'defense' then
-        ui.attack:setEnabled(true)
-        ui.balanced:setEnabled(true)
-        ui.defense:setEnabled(false)
-        if not ignoreUpdate then
-            g_game.setFightMode(FightDefensive)
-        end
-    end
+
+function onSetSafeFight2(self)
+    onSetSafeFight(self, not safeFightButton:isChecked())
 end
 
-function expertMode(self, checked)
-    local ui = getInventoryUi()
-
-    ui.whiteDoveBox:setVisible(checked)
-    ui.whiteHandBox:setVisible(checked)
-    ui.yellowHandBox:setVisible(checked)
-    ui.redFistBox:setVisible(checked)
-end
 
 function onSetPVPMode(self, selectedPVPButton)
     if selectedPVPButton == nil then
@@ -459,115 +777,182 @@ function onSetPVPMode(self, selectedPVPButton)
     local buttonId = selectedPVPButton:getId()
     local pvpMode = PVPWhiteDove
 
-    if buttonId == 'whiteDoveBox' then
+    if buttonId == "whiteDoveBox" then
         pvpMode = PVPWhiteDove
-    elseif buttonId == 'whiteHandBox' then
+    elseif buttonId == "whiteHandBox" then
         pvpMode = PVPWhiteHand
-    elseif buttonId == 'yellowHandBox' then
+    elseif buttonId == "yellowHandBox" then
         pvpMode = PVPYellowHand
-    elseif buttonId == 'redFistBox' then
+    elseif buttonId == "redFistBox" then
         pvpMode = PVPRedFist
     end
+
     g_game.setPVPMode(pvpMode)
 end
 
-function changeInventorySize()
-    inventoryShrink = not inventoryShrink
-    g_settings.set('mainpanel_shrink_inventory', inventoryShrink)
-    refreshInventorySizes()
-    modules.game_mainpanel.reloadMainPanelSizes()
+
+function onMountButtonClick(self, mousePos)
     local player = g_game.getLocalPlayer()
-    if player and g_game.isOnline() then
-        onFreeCapacityChange(player, player:getFreeCapacity())
-        onSoulChange(player, player:getSoul())
+
+    if player then
+        player:toggleMount()
     end
 end
 
-function getSlot5()
-    return inventoryController.ui.onPanel.shield
+
+function onOutfitChange(localPlayer, outfit, oldOutfit)
+    if outfit.mount == oldOutfit.mount then
+        return
+    end
+
+    mountButton:setChecked(outfit.mount ~= nil and outfit.mount > 0)
 end
 
-function reloadInventory()
-    if modules.client_options.getOption('showExpiryInInvetory') then
-        updateSlotsDuration()
+
+function getPVPBoxByMode(mode)
+    local widget = nil
+
+    if mode == PVPWhiteDove then
+        widget = whiteDoveBox
+    elseif mode == PVPWhiteHand then
+        widget = whiteHandBox
+    elseif mode == PVPYellowHand then
+        widget = yellowHandBox
+    elseif mode == PVPRedFist then
+        widget = redFistBox
     end
-    
-    for slot, getSlotInfo in pairs(getSlotPanelBySlot) do
-        local ui = getInventoryUi()
-        local slotPanel, toggler = getSlotInfo(ui)
-        if slotPanel then
-            local player = g_game.getLocalPlayer()
-            if player then
-                inventoryEvent(player, slot, player:getInventoryItem(slot))
+
+    return widget
+end
+
+
+function toggleIcon(bitChanged)
+    local icon = conditionPanel:getChildById(Icons[bitChanged].id)
+
+    if icon then
+        icon:destroy()
+    else
+        if bitChanged == PlayerStates.Swords then
+            if conditionPanel:getChildById(Icons[PlayerStates.PzBlock].id) then
+                return
+            end
+        elseif bitChanged == PlayerStates.PzBlock then
+            local swordsIcon = conditionPanel:getChildById(Icons[PlayerStates.Swords].id)
+            if swordsIcon then
+                swordsIcon:destroy()
             end
         end
+
+        icon = loadIcon(bitChanged)
+        icon:setParent(conditionPanel)
     end
 end
 
-function extendedView(extendedView)
-    if extendedView then
-        if not iconTopMenu then
-            iconTopMenu = modules.client_topmenu.addTopRightToggleButton('inventory', tr('Show inventory'),
-                '/images/topbuttons/inventory', toggle)
-            iconTopMenu:setOn(inventoryController.ui:isVisible())
-            inventoryController.ui:setBorderColor('black')
-            inventoryController.ui:setBorderWidth(2)
-        end
-    else
-        if iconTopMenu then
-            iconTopMenu:destroy()
-            iconTopMenu = nil
-        end
-        inventoryController.ui:setBorderColor('alpha')
-        inventoryController.ui:setBorderWidth(0)
-        local mainRightPanel = modules.game_interface.getMainRightPanel()
-        if not mainRightPanel:hasChild(inventoryController.ui) then
-            mainRightPanel:insertChild(3, inventoryController.ui)
-        end
-        inventoryController.ui:show()
-    end
-    inventoryController.ui.moveOnlyToMain = not extendedView
 
+function loadIcon(bitChanged)
+    local icon = g_ui.createWidget("ConditionWidget", conditionPanel)
+
+    icon:setId(Icons[bitChanged].id)
+    icon:setImageSource(Icons[bitChanged].path)
+    icon:setTooltip(Icons[bitChanged].tooltip)
+
+    return icon
 end
 
-function toggle()
-    if iconTopMenu:isOn() then
-        inventoryController.ui:hide()
-        iconTopMenu:setOn(false)
-    else
-        inventoryController.ui:show()
-        iconTopMenu:setOn(true)
+
+function onSoulChange(localPlayer, soul)
+    if not soul then
+        return
     end
+
+    soulLabel:setText(tr("Soul") .. ":\n" .. soul)
 end
 
-function toggleAdventurerStyle(hasBlessing)
-    for slot, getSlotInfo in pairs(getSlotPanelBySlot) do
-        local ui = getInventoryUi()
-        local slotPanel, toggler = getSlotInfo(ui)
-        if slotPanel then
-            slotPanel:setOn(hasBlessing)
+
+function onFreeCapacityChange(player, freeCapacity)
+    if not freeCapacity then
+        return
+    end
+
+    if freeCapacity > 100000 then
+        freeCapacity = 0
+    end
+
+    freeCapacity = math.floor(freeCapacity)
+
+    if freeCapacity > 99999 then
+        freeCapacity = math.min(9999, math.floor(freeCapacity / 1000)) .. "k"
+    end
+
+    capLabel:setText(tr("Cap") .. ":\n" .. freeCapacity)
+end
+
+
+function onStatesChange(localPlayer, now, old)
+    if now == old then
+        return
+    end
+
+    local bitsChanged = bit32.bxor(now, old)
+
+    for i = 1, 32 do
+        local pow = math.pow(2, i - 1)
+
+        if bitsChanged < pow then
+            break
+        end
+
+        local bitChanged = bit32.band(bitsChanged, pow)
+
+        if bitChanged ~= 0 then
+            toggleIcon(bitChanged)
         end
     end
 end
 
-function onBlessingsChange(blessings, blessVisualState)
-    toggleAdventurerStyle(blessings == 1)
-    local blessedButton = getInventoryUi().blessings
---[[     local tooltip = 'You are protected by the following blessings:'
-        tooltip = tooltip .. '\nTwist of Fate'
-        tooltip = tooltip .. '\nWisdom of Solitude'
-        tooltip = tooltip .. '\nSpark of the Phoenix'
-        tooltip = tooltip .. '\nFire of the Suns'
-        tooltip = tooltip .. '\nSpiritual Shielding'
-        tooltip = tooltip .. '\nEmbrace of Tibia'
-        tooltip = tooltip .. '\nHeart of the Mountain'
-        tooltip = tooltip .. '\nBlood of the Mountain'
-        blessedButton:setTooltip(tooltip) ]]
-    if blessVisualState == 1 then
-        blessedButton:setImageSource('/images/inventory/button_blessings_grey')
-    elseif blessVisualState == 2 then
-        blessedButton:setImageSource('/images/inventory/button_blessings_gold')
-    elseif blessVisualState == 3 then
-        blessedButton:setImageSource('/images/inventory/button_blessings_green')
+
+function onEmblemChange(localPlayer, emblem)
+    local icon = conditionPanel:getChildById("emblemIcon")
+
+    if emblem == EmblemNone then
+        if icon then
+            icon:destroy()
+        end
+        return
+    end
+
+    local emblems = {
+        [EmblemGreen]  = { path = "/images/game/emblems/emblem_green",  tooltip = tr("You are in a white war (green emblem)") },
+        [EmblemRed]    = { path = "/images/game/emblems/emblem_red",    tooltip = tr("You are in a white war (red emblem)") },
+        [EmblemBlue]   = { path = "/images/game/emblems/emblem_blue",   tooltip = tr("You are in a white war (blue emblem)") },
+        [EmblemMember] = { path = "/images/game/emblems/emblem_member", tooltip = tr("You are a war member") },
+        [EmblemOther]  = { path = "/images/game/emblems/emblem_other",  tooltip = tr("You are at war with this player") },
+    }
+
+    local emblemData = emblems[emblem]
+    if emblemData then
+        icon = icon or g_ui.createWidget("ConditionWidget", conditionPanel)
+        icon:setId("emblemIcon")
+        icon:setImageSource(emblemData.path)
+        icon:setTooltip(emblemData.tooltip)
+    end
+end
+
+function onSkullChange(localPlayer, skull)
+    local icon = conditionPanel:getChildById("skullIcon")
+
+    if skull == SkullNone then
+        if icon then
+            icon:destroy()
+        end
+        return
+    end
+
+    local skullIcon = SkullIcons[skull]
+    if skullIcon then
+        icon = icon or g_ui.createWidget("ConditionWidget", conditionPanel)
+        icon:setId(skullIcon.id)
+        icon:setImageSource(skullIcon.path)
+        icon:setTooltip(skullIcon.tooltip)
     end
 end

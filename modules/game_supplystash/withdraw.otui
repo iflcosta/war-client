@@ -1,0 +1,68 @@
+MainWindow
+  id: countWindow
+  !text: tr('Retreive Items')
+  size: 245 143
+  @onEscape: withdrawHide()
+
+  Item
+    id: item
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 2
+    margin-left: -4
+    focusable: false
+    virtual: true
+
+  Label
+    anchors.top: parent.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 10
+    text-align: topleft
+    text: Set or type the number of items you want to retreive
+    text-auto-resize: true
+    text-wrap: true
+
+  Label
+    id: count
+    anchors.bottom: item.bottom
+    anchors.right: item.right
+    margin-right: 2
+    width: 50
+    text-align: right
+    font: verdana-11px-rounded
+
+  HorizontalScrollBar
+    id: countScrollBar
+    anchors.left: prev.right
+    anchors.right: parent.right
+    anchors.bottom: horizontalSeparator.top
+    margin-left: 10
+    margin-bottom: 10
+    focusable: false
+    minimum: 1
+    maximum: 100
+
+  Button
+    id: buttonCancel
+    !text: tr('Cancel')
+    size: 43 20
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    focusable: false
+
+  Button
+    id: buttonOk
+    !text: tr('Ok')
+    size: 43 20
+    anchors.right: buttonCancel.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    focusable: false
+
+  HorizontalSeparator
+    id: horizontalSeparator
+    anchors.bottom: prev.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 12

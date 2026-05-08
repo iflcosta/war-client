@@ -13,10 +13,12 @@ Module
     - client_styles
     - client_locales
     - client_topmenu
-    - client_bottommenu
     - client_background
+    - client_textedit
     - client_options
     - client_entergame
+    - client_devtools
     - client_terminal
-    - client_debug_info
-    - client_serverlist
+    - client_stats
+    - client_feedback
+    - client_mobile

@@ -1,21 +1,12 @@
 Module
   name: client_entergame
   description: Manages enter game and character list windows
-  author: edubart
+  author: edubart & otclient.ovh
   website: https://github.com/edubart/otclient
-
-  dependencies:
-    - game_features
+  scripts: [ entergame, characterlist ]
+  @onLoad: EnterGame.init() CharacterList.init()
+  @onUnload: EnterGame.terminate() CharacterList.terminate()
+  
+  load-later:
     - game_things
-    - client_locales
-
-  @onLoad: |
-    dofile 'entergame'
-    dofile 'characterlist'
-    dofile 'createAccount'
-    EnterGame.init()
-    CharacterList.init()
-
-  @onUnload: |
-    EnterGame.terminate()
-    CharacterList.terminate()
+    - game_features

@@ -4,5 +4,5 @@ Module
   reloadable: false
   sandboxed: true
   scripts: [features]
-  @onLoad: controller:init()
-  @onUnload: controller:terminate()
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,17 +1,7 @@
-CombatBox < UICheckBox
-  size: 20 20
-  image-clip: 0 0 20 20
-  margin: 2 4
-
-  $checked:
-    image-clip: 0 20 20 20
-
-ChaseModeBox < CombatBox
-  image-source: /images/game/combatmodes/chasemode
 MiniPanel < Panel
   text-offset: 0 3
   text-align: top
-  image-source: /images/ui/outfits/minipanel
+  image-source: /images/ui/minipanel
   image-border: 3
   image-border-top: 22
   padding-left: 6
@@ -24,7 +14,7 @@ RotateButton < UIButton
   anchors.bottom: parent.bottom
   size: 20 20
   margin-bottom: 3
-  image-source: /images/ui/outfits/rotate_button
+  image-source: /images/ui/rotate_button
   image-color: #dfdfdf
 
   $hover:
@@ -45,12 +35,13 @@ PresetButton < Panel
 
   $focus:
     border: 1 white
-
+    image-color: #ffffff
   
   UICreature
     id: creature
     anchors.centerIn: parent
     size: 64 64
+    margin-bottom: 10
     phantom: true
   
   Label
@@ -79,7 +70,6 @@ PresetButton < Panel
     TextEdit
       id: input
       anchors.top: parent.top
-      anchors.bottom: parent.bottom
       anchors.left: parent.left
       width: 150
       placeholder: Preset Name
@@ -94,15 +84,20 @@ PresetButton < Panel
       text: Save
 
 SelectionButton < Panel
-  image-source:  /images/ui/button-grey-qt
-  image-clip: 0 0 98 40
+  image-source: /images/ui/button
+  image-color: #dfdfdf
+  image-clip: 0 0 22 23
   image-border: 3
   border: 1 alpha
   focusable: true
   phantom: false
+
+  $hover:
+    image-color: #ffffff
+
   $focus:
     border: 1 white
-
+    image-color: #ffffff
   
   UICreature
     id: outfit
@@ -190,32 +185,9 @@ OutfitWindow < MainWindow
           text: Show Mount
 
       FlatPanel
-        id: showFamiliar
-        height: 22
-        padding: 5
-        @onSetup: |
-          if not g_game.getFeature(GamePlayerFamiliars) then
-            self:hide()
-            self:setHeight(0)
-            self:setPadding(0)
-          end
-
-        CheckBox
-          id: check
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          anchors.right: parent.right
-          text: Show Familiar
-          @onSetup: |
-            if not g_game.getFeature(GamePlayerFamiliars) then
-              self:hide()
-            end
-
-      FlatPanel
         id: showWings
         height: 22
         padding: 5
-        visible:false
 
         CheckBox
           id: check
@@ -228,7 +200,7 @@ OutfitWindow < MainWindow
         id: showAura
         height: 22
         padding: 5
-        visible:false
+
         CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
@@ -240,7 +212,7 @@ OutfitWindow < MainWindow
         id: showShader
         height: 22
         padding: 5
-        visible:false
+
         CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
@@ -252,38 +224,14 @@ OutfitWindow < MainWindow
         id: showBars
         height: 22
         padding: 5
-        visible:true
+
         CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
           anchors.right: parent.right
           text: Show Bars
-          
-      FlatPanel
-        id: showTitle
-        height: 22
-        padding: 5
-        visible:false
-        CheckBox
-          id: check
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          anchors.right: parent.right
-          text: Show title
-
-      FlatPanel
-        id: showEffects
-        height: 22
-        padding: 5
-        visible:false
-        CheckBox
-          id: check
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          anchors.right: parent.right
-          text: Show Effects
-
+    
     FlatPanel
       id: panel
       anchors.top: parent.top
@@ -298,34 +246,25 @@ OutfitWindow < MainWindow
         id: floor
         anchors.centerIn: parent
         size: 448 448
-        
         layout:
           type: grid
           cell-size: 64 64
           flow: true
-
-      UICreature
-        id: UIfamiliar
-        anchors.centerIn: parent
-        size: 64 64
-        @onSetup: |
-          if not g_game.getFeature(GamePlayerFamiliars) then
-            self:hide()
-          end
-
+      
       UICreature
         id: creature
         anchors.centerIn: parent
-        size: 64 64
-        margin-top: 26
-        margin-left: -16
+        size: 128 128
+        margin-right: 32
+        margin-bottom: 32
+        outfit-shader: outfit_default
       
       Panel
         id: bars
         anchors.horizontalCenter: prev.horizontalCenter
         anchors.top: prev.top
         margin-top: 47
-        margin-right: 20
+        margin-left: 28
         size: 300 32
 
         Label
@@ -349,7 +288,7 @@ OutfitWindow < MainWindow
           Panel
             id: image
             anchors.centerIn: parent
-
+        
         Panel
           id: manaBar
           anchors.top: prev.bottom
@@ -470,21 +409,13 @@ OutfitWindow < MainWindow
         id: preset
         height: 20
 
-        CheckBoxCircle
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
-          size: 12 12
-          font: Verdana Bold-11px
-          text: Preset:
           text-offset: 15 0
+          text: Preset:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -498,21 +429,13 @@ OutfitWindow < MainWindow
         id: outfit
         height: 20
 
-        CheckBoxCircle
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
           text-offset: 15 0
           text: Outfit:
-          size: 12 12
-          font: Verdana Bold-11px
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -525,21 +448,14 @@ OutfitWindow < MainWindow
         id: mount
         height: 20
 
-        CheckBoxCircle
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
           text: Mount:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -547,66 +463,19 @@ OutfitWindow < MainWindow
           anchors.bottom: parent.bottom
           anchors.left: prev.right
           anchors.right: parent.right
-
-      Panel
-        id: familiar
-        height: 20
-        @onSetup: |
-          if not g_game.getFeature(GamePlayerFamiliars) then
-            self:hide()
-            self:setHeight(0)
-          end
-
-        CheckBoxCircle
-          id: check
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          text-offset: 15 0
-          text: Familiar:
-          size: 12 12
-          font: Verdana Bold-11px
-          width: 84
-          @onSetup: |
-            if not g_game.getFeature(GamePlayerFamiliars) then
-              self:hide()
-            end
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
-
-        FlatPanel
-          id: name
-          anchors.top: parent.top
-          anchors.bottom: parent.bottom
-          anchors.left: prev.right
-          anchors.right: parent.right
-          @onSetup: |
-            if not g_game.getFeature(GamePlayerFamiliars) then
-              self:hide()
-            end
-
+      
       Panel
         id: wings
         height: 20
-        visible:false
-        CheckBoxCircle
+
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
           text: Wings:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -618,22 +487,15 @@ OutfitWindow < MainWindow
       Panel
         id: aura
         height: 20
-        visible:false
-        CheckBoxCircle
+
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
           text: Aura:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -645,22 +507,15 @@ OutfitWindow < MainWindow
       Panel
         id: shader
         height: 20
-        visible:false
-        CheckBoxCircle
+
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
           text: Shader:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -672,22 +527,15 @@ OutfitWindow < MainWindow
       Panel
         id: healthBar
         height: 20
-        visible:false
-        CheckBoxCircle
+
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
           text: Health Bar:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -697,51 +545,17 @@ OutfitWindow < MainWindow
           anchors.right: parent.right
       
       Panel
-        id: effects
+        id: manaBar
         height: 20
-        visible:false
-        CheckBoxCircle
+
+        CheckBox
           id: check
           anchors.verticalCenter: parent.verticalCenter
           anchors.left: parent.left
+          image-source: /images/ui/checkbox_round
           text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
-          text: Effects:
+          text: Mana Bar:
           width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
-        
-        FlatPanel
-          id: name
-          anchors.top: parent.top
-          anchors.bottom: parent.bottom
-          anchors.left: prev.right
-          anchors.right: parent.right
-
-      Panel
-        id: title
-        height: 20
-        visible:false
-        CheckBoxCircle
-          id: check
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          text-offset: 15 0
-          size: 12 12
-          font: Verdana Bold-11px
-          text: title :
-          width: 84
-          color: #c0c0c0
-          image-source: /images/ui/checkboxcircle
-          image-clip: 0 0 12 12
-
-          $hover !disabled:
-            color: #C0C0C0
         
         FlatPanel
           id: name
@@ -843,20 +657,11 @@ OutfitWindow < MainWindow
     margin-left: 5
     height: 50
     text: Filter
-    
-    QtCheckBox
-      id: onlyMine
-      anchors.verticalCenter: parent.verticalCenter
-      anchors.left: parent.left
-      text: "Only mine"
-      width: 84
 
     TextEdit
       id: search
-      anchors.left: prev.right
-      anchors.right: parent.right
+      anchors.fill: parent
       placeholder: Search by name
-      placeholder-color: #c0c0c0c0
 
   ScrollablePanel
     id: presetsList

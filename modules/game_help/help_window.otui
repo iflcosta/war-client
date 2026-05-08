@@ -1,0 +1,154 @@
+MainWindow
+  id: helpWindowMain
+  !text: tr('Help')
+  visible: false
+  draggable: false
+  size: 265 285
+  color: #999999
+  @onEscape: modules.help_window.closing()
+
+  LongButton
+    id: ClientHelpButton
+    !text: tr('Client Help')
+    !tooltip: tr('Currently disabled.')
+    width: 90
+    anchors.top: parent.top
+    anchors.left: parent.left
+    @onClick: modules.food_eater.banana()
+
+  LongButton
+    id: TutorialHintsButton
+    !text: tr('Tutorial Hints')
+    width: 90
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 15
+
+  LongButton
+    id: TutorHelpButton
+    !text: tr('Tutor Help')
+    !tooltip: tr('Currently disabled.')
+    width: 90
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 15
+
+  LongButton
+    id: RuleViolationButton
+    !text: tr('Rule Violation')
+    !tooltip: tr('Currently disabled.')
+    width: 90
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 15
+
+  LongButton
+    id: ManualButton
+    !text: tr('Manual')
+    !tooltip: tr('Currently disabled.')
+    width: 90
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 15
+    @onClick: g_platform.openUrl("https://www.tibia.com/gameguides/?subtopic=manual")
+
+  LongButton
+    id: FaqButton
+    !text: tr('FAQ')
+    width: 90
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 15
+    @onClick: g_platform.openUrl("https://www.tibia.com/support/?subtopic=faq")
+
+  Label
+    id: ClientHelpText
+    !text: tr('Click here to get')
+    anchors.top: ClientHelpButton.top
+    anchors.left: ClientHelpButton.left
+    margin-left: 100
+    text-wrap: true
+    text-auto-resize: true
+    @onClick: modules.food_eater.melon()
+
+  Label
+    !text: tr('info on the client')
+    anchors.top: ClientHelpText.top
+    anchors.left: ClientHelpText.left
+    margin-top: 12
+    @onClick: modules.food_eater.melon()
+
+  Label
+    id: TutorialHintsText
+    !text: tr('Show previous')
+    anchors.left: TutorialHintsButton.left
+    anchors.top: TutorialHintsButton.top
+    margin-left: 100
+    @onClick: modules.food_eater.melon()
+
+  Label
+    !text: tr('Tutorial Hints')
+    anchors.top: TutorialHintsText.top
+    anchors.left: TutorialHintsText.left
+    margin-top: 12
+    @onClick: modules.food_eater.melon()
+
+  Label
+    id: TutorHelpText
+    !text: tr('Ask a tutor for help')
+    anchors.left: TutorHelpButton.left
+    anchors.top: TutorHelpButton.top
+    margin-left: 100
+    @onClick: modules.food_eater.melon()
+
+  Label
+    id: RuleViolationText
+    !text: tr('Report rule violations')
+    anchors.left: RuleViolationButton.left
+    anchors.top: RuleViolationButton.top
+    margin-left: 100
+    @onClick: modules.food_eater.melon()
+
+  Label
+    id: ManualText
+    !text: tr('Read the manual on')
+    anchors.left: ManualButton.left
+    anchors.top: ManualButton.top
+    margin-left: 100
+    @onClick: modules.food_eater.melon()
+
+  Label
+    !text: tr('the website')
+    anchors.top: ManualText.top
+    anchors.left: ManualText.left
+    margin-top: 12
+    @onClick: modules.food_eater.melon()
+
+  Label
+    id: FaqText
+    !text: tr('Read the FAQ on')
+    anchors.left: FaqButton.left
+    anchors.top: FaqButton.top
+    margin-left: 100
+    @onClick: modules.food_eater.melon()
+
+  Label
+    !text: tr('the website')
+    anchors.top: FaqText.top
+    anchors.left: FaqText.left
+    margin-top: 12
+    @onClick: modules.food_eater.melon()
+
+  HorizontalSeparator
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 15
+
+  Button
+    id: closeButton
+    !text: tr('Ok')
+    width: 50
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    @onClick: modules.help_window.closing()

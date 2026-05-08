@@ -1,82 +1,89 @@
 tradeWindow = nil
 
 function init()
-    g_ui.importStyle('tradewindow')
-
-    connect(g_game, {
-        onOwnTrade = onGameOwnTrade,
-        onCounterTrade = onGameCounterTrade,
-        onCloseTrade = onGameCloseTrade,
-        onGameEnd = onGameCloseTrade
-    })
+	g_ui.importStyle("tradewindow")
+	connect(g_game, {
+		onOwnTrade = onGameOwnTrade,
+		onCounterTrade = onGameCounterTrade,
+		onCloseTrade = onGameCloseTrade,
+		onGameEnd = onGameCloseTrade
+	})
 end
 
 function terminate()
-    disconnect(g_game, {
-        onOwnTrade = onGameOwnTrade,
-        onCounterTrade = onGameCounterTrade,
-        onCloseTrade = onGameCloseTrade,
-        onGameEnd = onGameCloseTrade
-    })
+	disconnect(g_game, {
+		onOwnTrade = onGameOwnTrade,
+		onCounterTrade = onGameCounterTrade,
+		onCloseTrade = onGameCloseTrade,
+		onGameEnd = onGameCloseTrade
+	})
 
-    if tradeWindow then
-        tradeWindow:destroy()
-    end
+	if tradeWindow then
+		tradeWindow:destroy()
+	end
 end
 
 function createTrade()
-    tradeWindow = g_ui.createWidget('TradeWindow', modules.game_interface.getRightPanel())
-    tradeWindow.onClose = function()
-        g_game.rejectTrade()
-        tradeWindow:hide()
-    end
-    tradeWindow:setup()
+	tradeWindow = g_ui.createWidget("TradeWindow", modules.game_interface.getRightPanel())
+
+	function tradeWindow.onClose()
+		g_game.rejectTrade()
+		tradeWindow:hide()
+	end
+
+	tradeWindow:setup()
 end
 
 function fillTrade(name, items, counter)
-    if not tradeWindow then
-        createTrade()
-    end
+	if not tradeWindow then
+		createTrade()
+	end
 
-    local tradeItemWidget = tradeWindow:getChildById('tradeItem')
-    tradeItemWidget:setItemId(items[1]:getId())
+	local tradeContainer, label = nil
 
-    local tradeContainer
-    local label
-    if counter then
-        tradeContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
-        label = tradeWindow:recursiveGetChildById('counterTradeLabel')
+	if counter then
+		tradeContainer = tradeWindow:recursiveGetChildById("counterTradeContainer")
+		label = tradeWindow:recursiveGetChildById("counterTradeLabel")
 
-        tradeWindow:recursiveGetChildById('acceptButton'):enable()
-    else
-        tradeContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
-        label = tradeWindow:recursiveGetChildById('ownTradeLabel')
-    end
-    label:setText(name)
+		tradeWindow:recursiveGetChildById("acceptButton"):show()
+		tradeWindow:recursiveGetChildById("waitForCounter"):hide()
+		tradeWindow:recursiveGetChildById("rejectButton"):setText("Reject")
+	else
+		tradeContainer = tradeWindow:recursiveGetChildById("ownTradeContainer")
+		label = tradeWindow:recursiveGetChildById("ownTradeLabel")
+	end
 
-    for index, item in ipairs(items) do
-        local itemWidget = g_ui.createWidget('Item', tradeContainer)
-        itemWidget:setItem(item)
-        ItemsDatabase.setTier(itemWidget, item)
-        itemWidget:setVirtual(true)
-        itemWidget:setMargin(0)
-        itemWidget.onClick = function()
-            g_game.inspectTrade(counter, index - 1)
-        end
-    end
+	label:setText(name)
+	tradeWindow:setContentMinimumHeight(76)
+
+	for index, item in ipairs(items) do
+		local itemWidget = g_ui.createWidget("Item", tradeContainer)
+
+		itemWidget:setItem(item)
+
+		-- No rarity logic
+
+		itemWidget:setVirtual(true)
+		itemWidget:setMargin(0)
+
+		function itemWidget.onClick()
+			g_game.inspectTrade(counter, index - 1)
+		end
+	end
 end
 
 function onGameOwnTrade(name, items)
-    fillTrade(name, items, false)
+	fillTrade(name, items, false)
 end
 
 function onGameCounterTrade(name, items)
-    fillTrade(name, items, true)
+	fillTrade(name, items, true)
 end
 
 function onGameCloseTrade()
-    if tradeWindow then
-        tradeWindow:destroy()
-        tradeWindow = nil
-    end
+	if tradeWindow then
+		tradeWindow:destroy()
+
+		tradeWindow = nil
+	end
 end

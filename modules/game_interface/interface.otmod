@@ -4,46 +4,43 @@ Module
   author: OTClient team
   website: https://github.com/edubart/otclient
   sandboxed: true
-  scripts: [ widgets/uigamemap, widgets/uiitem, widgets/statsbar, gameinterface ]
+  scripts: [ widgets/uigamemap, gameinterface ]
   load-later:
-    - game_walk
-    - game_joystick
-    - game_shortcuts
-    - game_minimap
-    - game_healthinfo
-    - game_inventory
-    - game_mainpanel
-    - game_hotkeys
-    - game_questlog
+    - game_buttons
     - game_textmessage
     - game_console
-    - game_actionbar
     - game_outfit
+    - game_healthinfo
+    - game_inventory
+    - game_sidebuttons
     - game_skills
     - game_containers
     - game_viplist
     - game_battle
+    - game_minimap
     - game_npctrade
     - game_textwindow
     - game_playertrade
-    - game_bugreport
     - game_playerdeath
     - game_playermount
     - game_ruleviolation
-    - game_market
     - game_spelllist
+    - game_cooldown
     - game_modaldialog
     - game_unjustifiedpoints
+    - game_walking
+    - game_itemselector
+    - client_travel
+    - client_textedit
+    - client_profiles
+    - game_actionbar
+    - game_stats
     - game_shaders
-    - game_attachedeffects
-    - game_paperdolls
-    - game_shop
-    - game_screenshot
-    - game_highscore
-    - game_blessing
-    - game_store
-    - game_creatureinformation
-    - game_vip
-    - game_instances
+    - game_questlog
+    - game_bot
+    - game_imbuing
+    - game_market
+    - game_ciclopedia
+    - game_interface_postload
   @onLoad: init()
   @onUnload: terminate()

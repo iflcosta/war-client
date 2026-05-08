@@ -1,148 +1,187 @@
-controllerModal = Controller:new()
+modalDialog = nil
 
-local MINIMUM_WIDTH_QT = 380
-local MINIMUM_WIDTH_OLD = 245
-local MAXIMUM_WIDTH = 600
-local MINIMUM_CHOICES = 4
-local MAXIMUM_CHOICES = 10
-local BASE_HEIGHT = 40
-local MAX_CHOICE_TEXT = 28
+function init()
+	g_ui.importStyle("modaldialog")
+	connect(g_game, {
+		onModalDialog = onModalDialog,
+		onGameEnd = destroyDialog
+	})
 
-function controllerModal:onInit()
-    controllerModal:registerEvents(g_game, {
-        onModalDialog = onModalDialog
-    })
+	local dialog = rootWidget:recursiveGetChildById("modalDialog")
+
+	if dialog then
+		modalDialog = dialog
+	end
 end
 
-function controllerModal:onTerminate()
+function terminate()
+	disconnect(g_game, {
+		onModalDialog = onModalDialog,
+		onGameEnd = destroyDialog
+	})
 end
 
-function controllerModal:onGameEnd()
-    local ui = controllerModal.ui
-    if ui and ui:isVisible() then
-        controllerModal:unloadHtml()
-    end
-end
+function destroyDialog()
+	if modalDialog then
+		modalDialog:unlock()
+		modalDialog:destroy()
 
-local function createButtonHandler(id, buttonId, choiceList)
-    return function()
-        local choice = (choiceList and choiceList.selectedChoice) or 0xFF
-        g_game.answerModalDialog(id, buttonId, choice)
-        controllerModal:unloadHtml()
-    end
-end
+		modalDialog = nil
 
-local function shortText(text, maxLen)
-    return #text <= maxLen and text or text:sub(1, maxLen)
-end
-
-local function calculateAndSetWidth(ui, messageLabel, buttonsWidth, message)
-    local horizontalPadding = ui:getPaddingLeft() + ui:getPaddingRight()
-    local totalButtonsWidth = buttonsWidth + horizontalPadding
-    local calculatedWidth = math.max(totalButtonsWidth, g_game.getFeature(GameEnterGameShowAppearance) and
-        MINIMUM_WIDTH_OLD or MINIMUM_WIDTH_QT)
-    if calculatedWidth > MAXIMUM_WIDTH then
-        calculatedWidth = MAXIMUM_WIDTH
-    end
-    local contentWidth = calculatedWidth - horizontalPadding
-    ui:setWidth(contentWidth)
-    messageLabel:setWidth(contentWidth)
-    messageLabel:setTextWrap(true)
-    return calculatedWidth
-end
-
-local function calculateChoicesHeight(choiceList, choices, labelHeight)
-    if #choices == 0 or not labelHeight then
-        return 0
-    end
-    local visibleChoices = math.min(MAXIMUM_CHOICES, math.max(MINIMUM_CHOICES, #choices))
-    local additionalHeight = visibleChoices * labelHeight + choiceList:getPaddingTop() + choiceList:getPaddingBottom()
-    choiceList:setHeight(additionalHeight)
-    return additionalHeight
-end
-
-local function applyFinalHeight(ui, messageLabel, additionalHeight)
-    local finalHeight = BASE_HEIGHT + additionalHeight + messageLabel:getHeight()
-    ui:setHeight(finalHeight)
-    controllerModal:findWidget('#choiceList'):setWidth(ui:getWidth() * 0.9) -- html not work "Width:100%"
+		focusRoot()
+	end
 end
 
 function onModalDialog(id, title, message, buttons, enterButton, escapeButton, choices, priority)
-    if controllerModal.ui then
-        controllerModal:unloadHtml()
-    end
-    local MINIMUM_WIDTH = g_game.getFeature(GameEnterGameShowAppearance) and MINIMUM_WIDTH_OLD or MINIMUM_WIDTH_QT
-    controllerModal:loadHtml('modaldialog.html')
-    local ui = controllerModal.ui
-    ui:hide()
-    local messageLabel = controllerModal:findWidget('#messageLabel')
-    local choiceList = controllerModal:findWidget('#choiceList')
-    local buttonsPanel = controllerModal:findWidget('#buttonsPanel')
-    ui:setTitle(title)
-    messageLabel:html(message)
-    local labelHeight = nil
-    local buttonsWidth = 0
-    local choicesCount = #choices
-    if choicesCount > 0 then
-        choiceList:setVisible(true)
-        for i = 1, choicesCount do
-            local choiceId = choices[i][1]
-            local choiceName = choices[i][2]
-            local displayName = shortText(choiceName, MAX_CHOICE_TEXT)
-            local choiceHtml = string.format('<div class="choice-item" style="width: %d;" data-choice-id="%d">%s</div>',
-                MINIMUM_WIDTH, choiceId, displayName)
-            local choiceWidget = controllerModal:createWidgetFromHTML(choiceHtml, choiceList)
-            if choiceWidget then
-                choiceWidget.choiceId = choiceId
-                choiceWidget.choiceIndex = i
-                if #choiceName > MAX_CHOICE_TEXT then
-                    choiceWidget:setTooltip(choiceName)
-                end
-                if not labelHeight then
-                    labelHeight = choiceWidget:getHeight()
-                end
-                choiceWidget.onClick = function()
-                    choiceList.selectedChoice = choiceId
-                    choiceList.selectedChoiceIndex = i
-                end
-            end
-        end
-        local firstChild = choiceList:getChildByIndex(1)
-        if firstChild then
-            firstChild:onClick()
-            firstChild:focus()
-        end
-        g_keyboard.bindKeyPress('Up', function()
-            choiceList:focusPreviousChild(KeyboardFocusReason)
-            choiceList:ensureChildVisible(choiceList:getFocusedChild())
-        end, choiceList)
-        g_keyboard.bindKeyPress('Down', function()
-            choiceList:focusNextChild(KeyboardFocusReason)
-            choiceList:ensureChildVisible(choiceList:getFocusedChild())
-        end, choiceList)
-    else
-        choiceList:setVisible(false)
-    end
-    for i = #buttons, 1, -1 do
-        local buttonId = buttons[i][1]
-        local buttonText = buttons[i][2]
-        local buttonHtml = string.format('<button class="modal-button">%s</button>', buttonText)
-        local button = controllerModal:createWidgetFromHTML(buttonHtml, buttonsPanel)
+	if modalDialog then
+		return
+	end
 
-        if button then
-            button.onClick = createButtonHandler(id, buttonId, choiceList)
-            buttonsWidth = buttonsWidth + button:getWidth() + button:getMarginLeft() + button:getMarginRight()
-        end
-    end
-    ui.onEnter = createButtonHandler(id, enterButton, choiceList)
-    ui.onEscape = createButtonHandler(id, escapeButton, choiceList)
-    if choiceList then
-        choiceList.onDoubleClick = createButtonHandler(id, enterButton, choiceList)
-    end
-    calculateAndSetWidth(ui, messageLabel, buttonsWidth, message)
-    local additionalHeight = calculateChoicesHeight(choiceList, choices, labelHeight)
-    controllerModal:scheduleEvent(function()
-        applyFinalHeight(ui, messageLabel, additionalHeight)
-        ui:show()
-    end, 222, "lazyHeightHtml")
+	modalDialog = g_ui.createWidget("ModalDialog", rootWidget)
+	local messageLabel = modalDialog:getChildById("messageLabel")
+	local choiceList = modalDialog:getChildById("choiceList")
+	local choiceScrollbar = modalDialog:getChildById("choiceScrollBar")
+	local buttonsPanel = modalDialog:getChildById("buttonsPanel")
+
+	modalDialog:setText(title)
+	messageLabel:setText(message)
+
+	repeat
+		local colorData = {
+			string.find(message, "%[color=(%a+)%](.-)%[/color%]", 1)
+		}
+
+		if not colorData or #colorData == 0 then
+			break
+		end
+
+		local _start = colorData[1]
+		local color = colorData[3]
+		local words = colorData[4]
+		message = message:gsub("%[color=(%a+)%](.-)%[/color%]", words, 1)
+		local labelHighlight = g_ui.createWidget("ModalPhantomLabel", messageLabel)
+
+		labelHighlight:fill("parent")
+		messageLabel:setText(message)
+
+		local drawText = messageLabel:getDrawText()
+		local tmpText = ""
+
+		for letter = 1, _start - 1 do
+			local tmpChar = string.byte(drawText:sub(letter, letter))
+			local fillChar = (tmpChar == 10 or tmpChar == 32) and string.char(tmpChar) or string.char(127)
+			tmpText = tmpText .. string.rep(fillChar, letterWidth[tmpChar])
+		end
+
+		tmpText = tmpText .. words
+
+		labelHighlight:setColor(color)
+		labelHighlight:setText(tmpText)
+		labelHighlight:setFont("verdana-11px-antialised")
+	until not string.find(message, "%[color=(%a+)%](.-)%[/color%]", 1)
+
+	messageLabel:setText(message)
+
+	local labelHeight = nil
+
+	for i = 1, #choices do
+		local choiceId = choices[i][1]
+		local choiceName = choices[i][2]
+		local label = g_ui.createWidget("ChoiceListLabel", choiceList)
+		label.choiceId = choiceId
+
+		label:setText(choiceName)
+		label:setPhantom(false)
+
+		labelHeight = labelHeight or label:getHeight()
+	end
+
+	choiceList:focusChild(choiceList:getFirstChild())
+	g_keyboard.bindKeyPress("Down", function ()
+		choiceList:focusNextChild(KeyboardFocusReason)
+	end, modalDialog)
+	g_keyboard.bindKeyPress("Up", function ()
+		choiceList:focusPreviousChild(KeyboardFocusReason)
+	end, modalDialog)
+
+	local choiceListHeight = 0
+
+	if #choices > 0 then
+		choiceList:setVisible(true)
+		choiceScrollbar:setVisible(true)
+
+		choiceListHeight = (math.min(modalDialog.maximumChoices, math.max(modalDialog.minimumChoices, #choices)) + 1) * labelHeight
+	end
+
+	local buttonsWidth = 0
+
+	for i = 1, #buttons do
+		local buttonId = buttons[i][1]
+		local buttonText = buttons[i][2]
+		local button = g_ui.createWidget("ModalButton", buttonsPanel)
+
+		button:setText(buttonText)
+
+		function button:onClick()
+			local focusedChoice = choiceList:getFocusedChild()
+			local choice = 255
+
+			if focusedChoice then
+				choice = focusedChoice.choiceId
+			end
+
+			g_game.answerModalDialog(id, buttonId, choice)
+			destroyDialog()
+		end
+
+		buttonsWidth = buttonsWidth + button:getWidth() + button:getMarginLeft() + button:getMarginRight()
+	end
+
+	buttonsWidth = buttonsWidth + modalDialog:getPaddingLeft() + modalDialog:getPaddingRight()
+
+	modalDialog:setWidth(math.min(modalDialog.maximumWidth, math.max(buttonsWidth, messageLabel:getTextSize().width, modalDialog.minimumWidth)))
+	choiceList:setHeight(choiceListHeight)
+	choiceScrollbar:setHeight(choiceListHeight)
+
+	local childrenHeight = modalDialog:getPaddingTop() + modalDialog:getPaddingBottom()
+
+	for _, child in pairs(modalDialog:getChildren()) do
+		local childHeight = child:getHeight() + child:getMarginTop() + child:getMarginBottom()
+
+		if childHeight > 0 and child:isVisible() and child ~= choiceScrollbar then
+			childrenHeight = childrenHeight + childHeight
+		end
+	end
+
+	modalDialog:setHeight(childrenHeight + 20)
+
+	local function enterFunc()
+		local focusedChoice = choiceList:getFocusedChild()
+		local choice = 255
+
+		if focusedChoice then
+			choice = focusedChoice.choiceId
+		end
+
+		g_game.answerModalDialog(id, enterButton, choice)
+		destroyDialog()
+	end
+
+	local function escapeFunc()
+		local focusedChoice = choiceList:getFocusedChild()
+		local choice = 255
+
+		if focusedChoice then
+			choice = focusedChoice.choiceId
+		end
+
+		g_game.answerModalDialog(id, escapeButton, choice)
+		destroyDialog()
+	end
+
+	choiceList.onDoubleClick = enterFunc
+	modalDialog.onEnter = enterFunc
+	modalDialog.onEscape = escapeFunc
+
+	modalDialog:lock()
 end

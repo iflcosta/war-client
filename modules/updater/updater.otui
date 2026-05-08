@@ -50,4 +50,16 @@ StaticMainWindow
     margin-right: 90
     !text: tr('Cancel')
     @onClick: Updater.abort()
+    image-source: /images/ui/longbutton
+    image-clip: 0 0 86 20
+    image-border: 3
+    
+    $hover !disabled:
+      image-clip: 0 0 86 20
+
+    $pressed:
+      image-clip: 0 20 86 20
+      text-offset: 1 1
+
+
 

@@ -1,0 +1,250 @@
+NonClosableMiniWindow
+  height: 80
+  id: sideButtonsWindow
+  @onClose: modules.game_sidebuttons.onMiniWindowClose()
+  &save: true
+  &autoOpen: 1
+
+  NonClosableMiniWindowContents
+    VerticalSeparator
+      id: verticalSeparator
+      anchors.top: skillsButton.top
+      anchors.left: spellsButton.right
+      anchors.bottom: preyTrackerButton.bottom
+      margin-left: 12
+
+    UIWidget
+      id: storeButton
+      image-source: buttons/store
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-left: 5
+      margin-top: 0
+      size: 108 20
+      image-clip: 0 0 108 20
+      @onClick: if modules.game_store then modules.game_store.toggle() end
+
+      $pressed:
+        image-clip: 0 20 108 20
+
+      $checked:
+        image-clip: 0 20 108 20
+
+    UIWidget
+      id: skillsButton
+      image-source: buttons/skills
+      anchors.left: parent.left
+      anchors.top: storeButton.bottom
+      margin-left: 5
+      margin-top: 5
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_skills.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: battleButton
+      image-source: buttons/battle
+      anchors.left: skillsButton.right
+      anchors.top: skillsButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_battle.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: exphButton
+      image-source: buttons/analyzers
+      anchors.left: battleButton.right
+      anchors.top: skillsButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_huntanalyzer.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: vipButton
+      image-source: buttons/vip_list
+      anchors.left: exphButton.right
+      anchors.top: skillsButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_viplist.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: spellsButton
+      image-source: buttons/spells
+      anchors.left: vipButton.right
+      anchors.top: skillsButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_spelllist.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: botButton
+      image-source: buttons/bot
+      anchors.left: parent.left
+      anchors.top: skillsButton.bottom
+      margin-left: 5
+      margin-top: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_bot.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: ciclopediaButton
+      image-source: buttons/ciclopedia
+      anchors.left: botButton.right
+      anchors.top: botButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: if modules.game_ciclopedia then modules.game_ciclopedia.toggle() end
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: unjustifiedPointsButton
+      image-source: buttons/unjustified_points
+      anchors.left: ciclopediaButton.right
+      anchors.top: ciclopediaButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: if modules.game_unjustifiedpoints then modules.game_unjustifiedpoints.toggle() end
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: preyButton
+      image-source: buttons/prey
+      anchors.left: unjustifiedPointsButton.right
+      anchors.top: ciclopediaButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: if modules.game_prey then modules.game_prey.toggle() end
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: preyTrackerButton
+      image-source: buttons/prey_window
+      anchors.left: preyButton.right
+      anchors.top: ciclopediaButton.top
+      margin-left: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: if modules.game_prey then modules.game_prey.toggleTracker() end
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: fullButtons
+      image-source: buttons/fullButtons
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-right: 3
+      size: 42 20
+      image-clip: 0 0 42 20
+      @onClick: modules.game_sidebuttons.toggle()
+
+      $checked:
+        image-clip: 0 20 42 20
+
+    UIWidget
+      id: logoutButton
+      image-source: buttons/exit
+      anchors.right: parent.right
+      anchors.top: fullButtons.bottom
+      margin-top: 5
+      margin-right: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.game_interface.tryLogout()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    UIWidget
+      id: optionsButton
+      image-source: buttons/settings
+      anchors.right: logoutButton.left
+      anchors.top: logoutButton.top
+      margin-right: 3
+      size: 20 20
+      image-clip: 0 0 20 20
+      @onClick: modules.client_options.toggle()
+
+      $pressed:
+        image-clip: 0 20 20 20
+
+      $checked:
+        image-clip: 0 20 20 20
+
+    Button
+      id: stopButton
+      !text: tr('Stop')
+      anchors.right: parent.right
+      anchors.top: skillsButton.bottom
+      margin-top: 8
+      margin-right: 2
+      width: 43
+      height: 13
+      @onClick: function() g_game.cancelAttackAndFollow() end

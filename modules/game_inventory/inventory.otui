@@ -1,597 +1,317 @@
-WhiteDoveBox < CombatBox
-  image-source: /images/game/combatmodes/whitedovemode
-WhiteHandBox < CombatBox
-  image-source: /images/game/combatmodes/whitehandmode
-YellowHandBox < CombatBox
-  image-source: /images/game/combatmodes/yellowhandmode
-RedFistBox < CombatBox
-  image-source: /images/game/combatmodes/redfistmode
-SafeFightBox < CombatBox
-  image-source: /images/game/combatmodes/safefight
+InventoryItem < Item
+  $on:
+    image-source: /images/ui/item-blessed
 
-StandModeBox < UICheckBox
-  size: 20 20
-  image-source: /images/inventory/buttons_general
-  image-clip: 0 0 20 20
-  $checked:
-    image-clip: 20 0 20 20
+HeadSlot < InventoryItem
+  id: slot1
+  image-source: /images/game/slots/head
+  &position: {x=65535, y=1, z=0}
+  $on:
+    image-source: /images/game/slots/head-blessed
 
-ChaseModeBox < UICheckBox
-  size: 20 20
-  image-source: /images/inventory/buttons_general
-  image-clip: 0 20 20 20
-  $checked:
-    image-clip: 20 20 20 20
+BodySlot < InventoryItem
+  id: slot4
+  image-source: /images/game/slots/body
+  &position: {x=65535, y=4, z=0}
+  $on:
+    image-source: /images/game/slots/body-blessed
 
-ConditionWidget < UIWidget
-  size: 10 10
+LegSlot < InventoryItem
+  id: slot7
+  image-source: /images/game/slots/legs
+  &position: {x=65535, y=7, z=0}
+  $on:
+    image-source: /images/game/slots/legs-blessed
 
-  $!first:
-    margin-left: 2
+FeetSlot < InventoryItem
+  id: slot8
+  image-source: /images/game/slots/feet
+  &position: {x=65535, y=8, z=0}
+  $on:
+    image-source: /images/game/slots/feet-blessed
 
-PhantomMiniWindow
-  id: maininventorypanel
-  draggable: true
-  phantom: false
-  height: 162
-  &panelHeight: 162
-  on: true
+NeckSlot < InventoryItem
+  id: slot2
+  image-source: /images/game/slots/neck
+  &position: {x=65535, y=2, z=0}
+  $on:
+    image-source: /images/game/slots/neck-blessed
 
-  $!on:
-    &panelHeight: 62
-    height: 62
+LeftSlot < InventoryItem
+  id: slot6
+  image-source: /images/game/slots/left-hand
+  &position: {x=65535, y=6, z=0}
+  $on:
+    image-source: /images/game/slots/left-hand-blessed
 
-  UIWidget
-    id: onPanel
-    anchors.fill: parent
-    phantom: true
+FingerSlot < InventoryItem
+  id: slot9
+  image-source: /images/game/slots/finger
+  &position: {x=65535, y=9, z=0}
+  $on:
+    image-source: /images/game/slots/finger-blessed
 
-    Button
-      id: changeSize
-      image-source: /images/inventory/min_button_small
-      image-clip: 0 0 12 12
-      anchors.top: parent.top
-      anchors.left: parent.left
-      margin-left: 8
-      margin-top: 5
-      size: 12 12
-      @onClick: changeInventorySize()
+BackSlot < InventoryItem
+  id: slot3
+  image-source: /images/game/slots/back
+  &position: {x=65535, y=3, z=0}
+  $on:
+    image-source: /images/game/slots/back-blessed
 
-      $pressed !disabled:
-        image-clip: 12 0 12 12
+RightSlot < InventoryItem
+  id: slot5
+  image-source: /images/game/slots/right-hand
+  &position: {x=65535, y=5, z=0}
+  $on:
+    image-source: /images/game/slots/right-hand-blessed
 
-    Button
-      id: blessings
-      image-source: /images/inventory/button_blessings_grey
-      image-clip: 0 0 12 12
-      anchors.top: changeSize.top
-      anchors.left: changeSize.right
-      margin-left: 3
-      size: 12 12
-      @onClick: modules.game_blessing.toggle()
-      $pressed !disabled:
-        image-clip: 12 0 12 12
+AmmoSlot < InventoryItem
+  id: slot10
+  image-source: /images/game/slots/ammo
+  &position: {x=65535, y=10, z=0}
+  $on:
+    image-source: /images/game/slots/ammo-blessed
 
+PurseButton < UIButton
+  id: purseButton
+  size: 34 12
+  !tooltip: tr('Open purse')
+  icon-source: /images/game/slots/purse
+  icon-clip: 0 0 34 12
+  
+  $on:
+    icon-clip: 0 12 34 12
+
+  $pressed:
+    icon-clip: 0 12 34 12
+
+
+
+InventoryButton < Button
+  height: 17
+  margin-top: 2
+  text-align: center
+
+SoulCapLabel < GameLabel
+  text-align: center
+  font: cipsoftFont
+  color: white
+  opacity: 1.0
+  margin-top: 4
+  text-offset: 0 3
+  width: 34
+  height: 20
+  icon-source: /images/game/slots/soulcap
+
+NonClosableMiniWindow
+  height: 170
+  width: 170
+  id: inventoryWindow
+  @onClose: modules.game_inventory.onMiniWindowClose()
+  &save: true
+  &autoOpen: 2
+
+  NonClosableMiniWindowContents
     UIButton
-      id: purseButton
-      image-source: /images/inventory/purse
-      !tooltip: tr('Open purse')
-      anchors.left: backpack.left
-      anchors.bottom: backpack.top   
-      size: 34 12
-      image-clip: 0 0 34 12
-      margin-bottom: 3
-      @onClick: |
-        local purse = g_game.getLocalPlayer():getInventoryItem(InventorySlotPurse)
-        if purse then
-            g_game.use(purse)
-        end
-
-      $on:
-        image-clip: 0 12 34 12
-      $pressed:
-        image-clip: 0 12 34 12
-
-    TopToggleButton
-      id: standPosture
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 0 20 20
-      anchors.right: parent.right
-      anchors.top: changeSize.top
-      margin-right: 7
-      size: 20 20
-      @onClick: |
-        selectPosture('stand')
-
-      $pressed !disabled:
-        image-clip: 20 0 20 20
-
-      $disabled:
-        image-clip: 20 0 20 20
-
-    TopToggleButton
-      id: followPosture
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 20 20 20
-      anchors.right: standPosture.right
-      anchors.top: standPosture.bottom
-      margin-top: 4
-      size: 20 20
-      @onClick: |
-        selectPosture('follow')
-
-      $pressed !disabled:
-        image-clip: 20 20 20 20
-
-      $disabled:
-        image-clip: 20 20 20 20
-    UICheckBox
-      id: expert
-      image-source: /data/images/inventory/button-expert-up
-      anchors.right: standPosture.right
-      anchors.top: followPosture.bottom
-      phantom: false
-      margin-top: 4
-      size: 20 20
-
-      $checked:
-        image-source: /data/images/inventory/button-expert-down
-
-      $disabled:
-        image-source: /data/images/inventory/button-expert-disabled
-
-
-    UICheckBox
-      id: pvp
-      image-source: /images/game/combatmodes/onPanel
-      size: 44 21
-      image-clip: 0 0 44 21
-      margin: 2 4
-      anchors.right: standPosture.right
-      anchors.top: expert.bottom
-      margin-top: 4
-      margin-right: 0
-      phantom: false
-      size: 44 21
-
-      $checked:
-        image-clip: 0 20 44 21
-
-
-    WhiteHandBox
-      id: whiteHandBox
-      anchors.right: parent.right
-      anchors.top: pvp.bottom
-      margin-right: 8
-      margin-top: 5
-
-    RedFistBox
-      id: redFistBox
-      anchors.right: whiteHandBox.right
-      anchors.top: whiteHandBox.bottom
-      margin-right: -1
-      margin-right: 0
-
-    WhiteDoveBox
-      id: whiteDoveBox
-      anchors.right: whiteHandBox.left
-      anchors.top: whiteHandBox.top
-      margin-top: 0
-
-    YellowHandBox
-      id: yellowHandBox
-      anchors.right: whiteDoveBox.right
-      anchors.top: whiteDoveBox.bottom
-      margin-right: 0
-
-    TopToggleButton
-      id: attack
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 40 20 20
-      anchors.right: standPosture.left
-      anchors.top: standPosture.top
-      margin-right: 4
-      size: 20 20
-      @onClick: |
-        selectCombat('attack')
-
-      $pressed !disabled:
-        image-clip: 20 40 20 20
-
-      $disabled:
-        image-clip: 20 40 20 20
-
-    TopToggleButton
-      id: balanced
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 80 20 20
-      anchors.right: attack.right
-      anchors.top: attack.bottom
-      margin-top: 4
-      size: 20 20
-      @onClick: |
-        selectCombat('balanced')
-
-      $pressed !disabled:
-        image-clip: 20 80 20 20
-
-      $disabled:
-        image-clip: 20 80 20 20
-
-    TopToggleButton
-      id: defense
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 60 20 20
-      anchors.right: attack.right
-      anchors.top: balanced.bottom
-      margin-top: 4
-      size: 20 20
-      @onClick: |
-        selectCombat('defense')
-
-      $pressed !disabled:
-        image-clip: 20 60 20 20
-
-      $disabled:
-        image-clip: 20 60 20 20
-
-    TopToggleButton
-      id: stop
-      !text: tr('Stop')
-      anchors.left: defense.left
-      anchors.right: standPosture.right
-      anchors.bottom: parent.bottom
-      font: cipsoftFont
-      color: #c0c0c0ff
-      size: 44 13
-      @onClick: |
-        g_game.stop()
-        g_game.getLocalPlayer():stopAutoWalk()
-
-    Panel
-      id: icons
-      size: 108 18
-      padding: 2
-
-      image-source: /images/ui/containerslot
-      image-border: 3
-      anchors.left: changeSize.left
-      anchors.right: backpack.right
-      anchors.bottom: parent.bottom
-      anchors.top: stop.top
-      layout:
-        type: horizontalBox
-
-    MainInventoryItem
-      id: amulet
-      anchors.top: changeSize.bottom
-      anchors.left: changeSize.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 2, z = 0}
-
-    MainInventoryItem
-      id: helmet
-      anchors.top: changeSize.top
-      anchors.left: amulet.right
-      margin-left: 3
-      &slotPosition: {x = 65535, y = 1, z = 0}
-
-    MainInventoryItem
-      id: backpack
-      anchors.top: amulet.top
-      anchors.left: helmet.right
-      margin-left: 3
-      &slotPosition: {x = 65535, y = 3, z = 0}
-
-    MainInventoryItem
-      id: sword
-      anchors.top: amulet.bottom
-      anchors.left: amulet.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 6, z = 0}
-
-    MainInventoryItem
-      id: ring
-      anchors.top: sword.bottom
-      anchors.left: amulet.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 9, z = 0}
-
-    MainInventoryItem
-      id: armor
-      anchors.top: helmet.bottom
-      anchors.left: helmet.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 4, z = 0}
-
-    MainInventoryItem
-      id: legs
-      anchors.top: armor.bottom
-      anchors.left: helmet.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 7, z = 0}
-
-    MainInventoryItem
-      id: boots
-      anchors.top: legs.bottom
-      anchors.left: helmet.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 8, z = 0}
-
-    MainInventoryItem
-      id: shield
-      anchors.top: backpack.bottom
-      anchors.left: backpack.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 5, z = 0}
-
-    MainInventoryItem
-      id: tools
-      anchors.top: shield.bottom
-      anchors.left: backpack.left
-      margin-top: 3
-      &slotPosition: {x = 65535, y = 10, z = 0}
-
-    MainInventoryItem
-      id: soulPanel
-      anchors.left: amulet.left
-      anchors.right: amulet.right
-      anchors.bottom: boots.bottom
-      anchors.top: ring.bottom
-      margin-top: 3
-
-      Label
-        !text: tr('Soul')
-        text.align: center
-        font: cipsoftFont
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        color: #c0c0c0ff
-        margin-top: 1
-
-      Label
-        id: soul
-        !text: '100000'
-        font: cipsoftFont
-        text-align: center
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        color: #c0c0c0ff
-
-    MainInventoryItem
-      id: capacityPanel
-      anchors.left: backpack.left
-      anchors.right: backpack.right
-      anchors.bottom: boots.bottom
-      anchors.top: tools.bottom
-      margin-top: 3
-
-      Label
-        !text: tr('Cap')
-        text.align: center
-        font: cipsoftFont
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        color: #c0c0c0ff
-        margin-top: 1
-
-      Label
-        id: capacity
-        !text: '10000'
-        font: cipsoftFont
-        text-align: center
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        color: #c0c0c0ff
-
-  UIWidget
-    id: offPanel
-    anchors.fill: parent
-    phantom: true
-    visible: false
-
-    Button
-      id: changeSize
-      image-source: /images/inventory/max_button_small
-      image-clip: 0 0 12 12
+      id: minimizeButton
       anchors.top: parent.top
       anchors.left: parent.left
-      margin-left: 8
-      margin-top: 5
-      size: 12 12
-      @onClick: changeInventorySize()
-
-      $pressed !disabled:
-        image-clip: 12 0 12 12
-
-    MainInventoryItem
-      id: soulAndCapacity
-      anchors.left: changeSize.right
-      anchors.top: changeSize.top
-      margin-left: 4
-      size: 30 44
-
-      Label
-        !text: tr('Cap')
-        text.align: center
-        font: cipsoftFont
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        color: #c0c0c0ff
-        margin-top: 1
-        height: 10
-
-      Label
-        id: capacity
-        !text: '10000'
-        font: cipsoftFont
-        text-align: center
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        margin-top: 8
-        color: #c0c0c0ff
-
-      Label
-        !text: tr('Soul')
-        text.align: center
-        font: cipsoftFont
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        color: #c0c0c0ff
-        margin-bottom: 8
-        height: 10
-
-      Label
-        id: soul
-        !text: '100000'
-        font: cipsoftFont
-        text-align: center
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        margin-bottom: -2
-        color: #c0c0c0ff
-
-    TopToggleButton
-      id: attack
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 40 20 20
-      anchors.left: soulAndCapacity.right
-      anchors.top: changeSize.top
-      margin-left: 3
-      size: 20 20
-      @onClick: |
-        selectCombat('attack')
-
-      $pressed !disabled:
-        image-clip: 20 40 20 20
-
-      $disabled:
-        image-clip: 20 40 20 20
-
-    TopToggleButton
-      id: defense
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 60 20 20
-      anchors.left: attack.right
-      anchors.top: changeSize.top
-      margin-left: 1
-      size: 20 20
-      @onClick: |
-        selectCombat('defense')
-
-      $pressed !disabled:
-        image-clip: 20 60 20 20
-
-      $disabled:
-        image-clip: 20 60 20 20
-
-    TopToggleButton
-      id: balanced
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 80 20 20
-      anchors.left: defense.right
-      anchors.top: changeSize.top
-      margin-left: 1
-      size: 20 20
-      @onClick: |
-        selectCombat('balanced')
-
-      $pressed !disabled:
-        image-clip: 20 80 20 20
-
-      $disabled:
-        image-clip: 20 80 20 20
-
-    TopToggleButton
-      id: standPosture
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 0 20 20
-      anchors.left: attack.left
-      anchors.top: attack.bottom
-      margin-top: 4
-      size: 20 20
-      @onClick: |
-        selectPosture('stand')
-
-      $pressed !disabled:
-        image-clip: 20 0 20 20
-
-      $disabled:
-        image-clip: 20 0 20 20
-
-    TopToggleButton
-      id: followPosture
-      image-source: /images/inventory/buttons_general
-      image-clip: 0 20 20 20
-      anchors.left: standPosture.right
-      anchors.top: standPosture.top
-      margin-left: 1
-      size: 20 20
-      @onClick: |
-        selectPosture('follow')
-
-      $pressed !disabled:
-        image-clip: 20 20 20 20
-
-      $disabled:
-        image-clip: 20 20 20 20
-    SafeFightBox
-      id: pvp
-      anchors.left: followPosture.right
-      anchors.top: standPosture.top
-      margin-left: 1
-      margin-top: 0
-      phantom: false
-
-    UIWidget
-      id: expert
-      image-source: /data/images/inventory/button-expert-up
-      anchors.left: changeSize.left
-      anchors.bottom: soulAndCapacity.bottom
-      phantom: false
-      size: 12 12
-      @onClick: |
-        expertMode()
-
-      $checked:
-        image-source: /data/images/inventory/button-expert-down
-
-      $disabled:
-        image-source: /data/images/inventory/button-expert-disabled
-
-    Button
-      id: blessings
-      image-source: /images/inventory/button_blessings_grey
-      image-clip: 0 0 12 12
-      anchors.top: expert.bottom
-      anchors.left: changeSize.left
+      size: 14 14
+      image-source: /images/ui/miniwindow_buttons
+      image-clip: 0 0 14 14
       margin-top: 3
-      size: 12 12
-      @onClick: modules.game_blessing.toggle()
-      $pressed !disabled:
-        image-clip: 12 0 12 12
+      margin-left: 3
+      @onClick: modules.game_inventory.toggleInventoryMinimize()
 
     Panel
-      id: icons
-      anchors.left: soulAndCapacity.left
-      anchors.right: pvp.right
-      anchors.bottom: parent.bottom
-      anchors.top: blessings.top
-      phantom: false
-      image-source: /images/ui/containerslot
-      image-border: 3
+      id: inventorySlotsPanel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 115
+      height: 165
+
+      NeckSlot
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 18
+        margin-right: 5
+        margin-left: 5
+
+      LeftSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        anchors.left: prev.left
+        margin-top: 4
+
+      FingerSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        anchors.left: prev.left
+        margin-top: 4
+      
+      HeadSlot
+        anchors.top: parent.top
+        anchors.left: slot2.right
+        margin-top: 4
+        margin-left: 4
+
+      BodySlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        margin-top: 4
+
+      LegSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        margin-top: 4
+
+      FeetSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        margin-top: 4
+      
+      BackSlot
+        anchors.top: slot2.top
+        anchors.left: slot1.right
+        margin-left: 4
+
+      RightSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        margin-top: 4
+
+      AmmoSlot
+        anchors.top: prev.bottom
+        anchors.horizontalCenter: prev.horizontalCenter
+        margin-top: 4
+
+      PurseButton
+        anchors.left: slot3.left
+        anchors.bottom: slot3.top
+        margin-bottom: 3
+
+    SoulCapLabel
+      id: capLabel
+      anchors.top: inventorySlotsPanel.top
+      anchors.left: inventorySlotsPanel.left
+      margin-top: 130
+      margin-left: 80
+
+    SoulCapLabel
+      id: soulLabel
+      anchors.top: inventorySlotsPanel.top
+      anchors.left: inventorySlotsPanel.left
+      margin-top: 130
+      margin-left: 5
+
+    Panel
+      id: conditionPanel
+      image-source: /images/ui/conditionPanel
       layout:
         type: horizontalBox
+        fitChildren: false
+      height: 13
+      width: 110
+      padding: 2
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 152
+      margin-left: 5
 
-    TopToggleButton
-      id: stop
-      !text: tr('Stop')
+    Panel
+      id: inventoryControlsPanel
+      anchors.top: parent.top
+      anchors.left: inventorySlotsPanel.right
       anchors.right: parent.right
-      margin-right: 7
-      anchors.bottom: icons.bottom
-      font: cipsoftFont
-      color: #c0c0c0ff
-      size: 44 13
-      @onClick: |
-        g_game.stop()
-        g_game.getLocalPlayer():stopAutoWalk()
+      anchors.bottom: parent.bottom
+
+      FightOffensiveBox
+        id: fightOffensiveBox
+        anchors.left: parent.left
+        anchors.top: parent.top
+        margin-top: 5
+        margin-left: 8
+
+      FightBalancedBox
+        id: fightBalancedBox
+        anchors.left: prev.left
+        anchors.top: prev.bottom
+        margin-top: 1
+
+      FightDefensiveBox
+        id: fightDefensiveBox
+        anchors.left: prev.left
+        anchors.top: prev.bottom
+        margin-top: 1
+      
+      CombatBox
+        id: chaseModeBoxStand
+        image-source: /images/game/combatmodes/standmode
+        anchors.left: fightOffensiveBox.right
+        anchors.top: fightOffensiveBox.top
+        margin-left: 4
+      
+      CombatBox
+        id: chaseModeBoxChase
+        image-source: /images/game/combatmodes/chasemode
+        anchors.left: prev.left
+        anchors.top: prev.bottom
+        margin-top: 1
+    
+      SafeFightBox
+        id: safeFightBox
+        anchors.left: chaseModeBoxChase.left
+        anchors.top: chaseModeBoxChase.bottom
+        margin-top: 1
+        
+      MountButton
+        id: mountButton
+        anchors.left: safeFightBox.left
+        anchors.top: safeFightBox.bottom
+        margin-top: 1
+
+      InventoryButton
+        id: stopButton
+        !text: tr('Stop')
+        anchors.top: prev.bottom
+        anchors.left: fightDefensiveBox.left
+        anchors.right: safeFightBox.right
+        margin-top: 5
+        visible: false
+        height: 0
+        @onClick: function() g_game.cancelAttackAndFollow() end
+
+      InventoryButton
+        id: questsButton
+        !text: tr('Quests')
+        anchors.top: prev.bottom
+        anchors.left: prev.left
+        anchors.right: prev.right
+        margin-top: 3
+        visible: false
+        height: 0
+        @onClick: g_game.requestQuestLog()
+
+      InventoryButton
+        id: optionsButton
+        !text: tr('Options')
+        anchors.top: prev.bottom
+        anchors.left: prev.left
+        anchors.right: prev.right
+        margin-top: 3
+        visible: false
+        height: 0
+        @onClick: modules.client_options.toggle()
+
+      InventoryButton
+        id: ciclopediaButton
+        !text: tr('Ciclopedia')
+        anchors.top: prev.bottom
+        anchors.left: prev.left
+        anchors.right: prev.right
+        margin-top: 3
+        visible: false
+        height: 0
+        @onClick: if modules.game_ciclopedia then modules.game_ciclopedia.toggle() end
+
+

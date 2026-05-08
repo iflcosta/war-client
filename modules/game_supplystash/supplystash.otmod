@@ -1,0 +1,10 @@
+Module
+  name: game_supplystash
+  description: Game stash
+  author: Reddington#9222
+  sandboxed: true
+  scripts: [ supplystash ]
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

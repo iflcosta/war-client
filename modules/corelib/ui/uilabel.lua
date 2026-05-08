@@ -1,24 +1,11 @@
--- @docclass
-UILabel = extends(UIWidget, 'UILabel')
+UILabel = extends(UIWidget, "UILabel")
 
 function UILabel.create()
-    local label = UILabel.internalCreate()
-    label:setPhantom(true)
-    label:setFocusable(false)
-    label:setTextAlign(AlignLeft)
-    return label
-end
+	local label = UILabel.internalCreate()
 
-function UILabel:setValue(value)
-    local scrollBar = self:recursiveGetChildById('valueBar')
-    if scrollBar then
-        scrollBar:setValue(value)
-    end
-end
+	label:setPhantom(true)
+	label:setFocusable(false)
+	label:setTextAlign(AlignLeft)
 
-function UILabel:setValue(value)
-    local scrollBar = self:recursiveGetChildById('valueBar')
-    if scrollBar then
-        scrollBar:setValue(value)
-    end
+	return label
 end
