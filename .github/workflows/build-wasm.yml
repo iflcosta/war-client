@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: physfs-build
-          key: physfs-wasm-emsdk3173-v1
+          key: physfs-wasm-emsdk3173-v2
 
       - name: Build PhysFS for WASM
         run: |
@@ -59,7 +59,9 @@ jobs:
             emcmake cmake ../physfs-src \
               -DPHYSFS_BUILD_SHARED=OFF \
               -DPHYSFS_BUILD_TEST=OFF \
-              -DPHYSFS_BUILD_DOCS=OFF
+              -DPHYSFS_BUILD_DOCS=OFF \
+              -DCMAKE_C_FLAGS="-matomics -mbulk-memory" \
+              -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory"
             emmake make -j2
           fi
 
