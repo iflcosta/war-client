@@ -95,10 +95,11 @@ jobs:
 
       - name: Build WASM (single thread to save memory)
         run: |
+          set -eo pipefail
           source emsdk/emsdk_env.sh
           cd engine/build-wasm
           cmake --build . --target otclient -j2 2>&1 | tee build.log
-          echo "Build exit code: $?"
+          echo "Build finished successfully"
 
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
