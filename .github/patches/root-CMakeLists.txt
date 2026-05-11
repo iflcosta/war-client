@@ -1,0 +1,68 @@
+cmake_minimum_required(VERSION 2.6)
+project(otclient)
+
+if(CMAKE_BASE_NAME STREQUAL "em++")
+    set(WASM ON)
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
+
+# default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+option(FRAMEWORK_SOUND "Use SOUND " OFF)
+option(FRAMEWORK_GRAPHICS "Use GRAPHICS " ON)
+option(FRAMEWORK_XML "Use XML " ON)
+option(FRAMEWORK_NET "Use NET " ON)
+
+include(src/framework/CMakeLists.txt)
+include(src/client/CMakeLists.txt)
+
+# functions map for reading backtraces
+if(NOT APPLE AND NOT WASM)
+    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -no-pie -Wl,-Map=${PROJECT_NAME}.map")
+endif()
+
+set(executable_SOURCES
+    src/main.cpp
+)
+
+# add executable icon for win32 platforms
+if(WIN32)
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/otcicon.o
+                       COMMAND ${CMAKE_RC_COMPILER}
+                       -I${CMAKE_CURRENT_SOURCE_DIR}/src
+                       -i${CMAKE_CURRENT_SOURCE_DIR}/src/otcicon.rc
+                       -o ${CMAKE_CURRENT_BINARY_DIR}/otcicon.o)
+    set(executable_SOURCES ${executable_SOURCES} otcicon.o)
+endif()
+
+if(VERSION)
+    add_definitions(-D"VERSION=\\"${VERSION}\\"")
+endif()
+
+# add client executable
+add_executable(${PROJECT_NAME} ${framework_SOURCES} ${client_SOURCES} ${executable_SOURCES})
+target_link_libraries(${PROJECT_NAME} ${framework_LIBRARIES})
+
+if(WASM)
+    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".js")
+    set(WASM_LINK_FLAGS
+        "-s USE_SDL=2 -s USE_ZLIB=1 -s USE_LIBPNG=1 -s USE_BOOST_HEADERS=1 -s USE_PTHREADS=1"
+        "-s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=268435456"
+        "-s EXPORTED_RUNTIME_METHODS=['callMain','FS','addRunDependency','removeRunDependency']"
+        "-s FORCE_FILESYSTEM=1 -s ASYNCIFY=1 -lidbfs.js"
+        "-s PTHREAD_POOL_SIZE=4"
+        "-s PROXY_TO_PTHREAD=1"
+        "-s WASM=1 -O1"
+        "--use-preload-plugins"
+    )
+    string(JOIN " " WASM_LINK_FLAGS_STR ${WASM_LINK_FLAGS})
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS_STR})
+endif()
+
+if(APPLE AND USE_STATIC_LIBS)
+    target_link_libraries(${PROJECT_NAME} "-framework Foundation" "-framework IOKit")
+endif()
